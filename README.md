@@ -4,7 +4,7 @@
 
 Clash Matrix Studio keeps MiSub's Cloudflare Pages, Vue dashboard, Pages Functions, storage, profile, backup, and diagnostics foundation, then adds the Clash Matrix Studio V5.x rule generation and node parsing behavior.
 
-[中文说明](README-zh.md) | [Migration Notes](CLASH_MATRIX_MIGRATION.md) | [Third-Party Notices](THIRD_PARTY_NOTICES.md)
+[中文说明](README-zh.md) | [Beginner Deployment Guide](docs/DEPLOYMENT_ZH.md) | [Migration Notes](CLASH_MATRIX_MIGRATION.md) | [Third-Party Notices](THIRD_PARTY_NOTICES.md)
 
 ## Highlights
 
@@ -13,12 +13,22 @@ Clash Matrix Studio keeps MiSub's Cloudflare Pages, Vue dashboard, Pages Functio
 - Adds Matrix policy groups such as `PROXY`, `♻️ 自动测速`, `TG`, `AI`, `YOUTUBE`, `TIKTOK`, `APPLE`, `BANK`, `FINANCE`, `FAKE-LOCATION`, `BLOCK`, and `FINAL`.
 - Uses `http://www.google.com/blank.html` as the default latency test URL.
 - Routes BiliBili directly and gives TikTok its own policy group.
-- Includes ad-block rule providers from `privacy-protection-tools/anti-AD` and `REIJI007/AdBlock_Rule_For_Clash`.
+- Keeps lightweight ad, HTTPDNS, DNS hijacking, and privacy repair rules. Oversized `privacy-protection-tools/anti-AD` and `REIJI007/AdBlock_Rule_For_Clash` providers are not enabled by default to avoid Stash startup failures.
 - Uses direct `raw.githubusercontent.com` rule URLs instead of a `mirror.ghproxy.com` prefix.
 - Improves node parsing for SS SIP002, URL-encoded Base64 userinfo, VLESS IPv6, VLESS Reality, and Shadowrocket-style VLESS links.
 - Emits safer Clash / Mihomo defaults such as `allow-lan: false`, `ipv6: false`, `unified-delay: true`, and `tcp-concurrent: true`.
 
+## Added In This Fork
+
+- Visual Matrix custom rules in the dashboard: create policy groups and add domain/IP rules without hand-writing full templates.
+- Dedicated TikTok policy group and direct BiliBili routing.
+- Stash quick import uses an explicit Clash YAML link.
+- Fetch Proxy supports custom User-Agent forwarding for providers that block Cloudflare fetches.
+- Matrix rules, policy icons, node parsing, and Stash compatibility are customized for this fork.
+
 ## Deploy To Cloudflare Pages
+
+Chinese beginner guide: [docs/DEPLOYMENT_ZH.md](docs/DEPLOYMENT_ZH.md).
 
 1. Fork or upload this repository.
 2. Open the Cloudflare dashboard.

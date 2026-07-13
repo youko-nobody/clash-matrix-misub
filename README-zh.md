@@ -4,7 +4,7 @@
 
 Clash Matrix Studio 继承 MiSub 的 Cloudflare Pages + Vue 管理台 + Pages Functions 架构，并加入 Clash Matrix Studio V5.x 里沉淀下来的规则分流、节点解析和配置生成逻辑。旧版单文件 Worker 仍可作为回退方案，新版推荐使用本目录的 Pages 项目。
 
-[English](README.md) | [迁移说明](CLASH_MATRIX_MIGRATION.md) | [第三方声明](THIRD_PARTY_NOTICES.md)
+[English](README.md) | [小白部署教程](docs/DEPLOYMENT_ZH.md) | [迁移说明](CLASH_MATRIX_MIGRATION.md) | [第三方声明](THIRD_PARTY_NOTICES.md)
 
 ## 核心优势
 
@@ -13,10 +13,18 @@ Clash Matrix Studio 继承 MiSub 的 Cloudflare Pages + Vue 管理台 + Pages Fu
 - 内置策略组包含 `PROXY`、`♻️ 自动测速`、`TG`、`AI`、`YOUTUBE`、`TIKTOK`、`APPLE`、`BANK`、`FINANCE`、`FAKE-LOCATION`、`BLOCK`、`FINAL` 等。
 - 延迟测试链接默认使用 `http://www.google.com/blank.html`。
 - BiliBili 规则默认直连，TikTok 有独立策略组。
-- 去广告规则集接入 `privacy-protection-tools/anti-AD` 和 `REIJI007/AdBlock_Rule_For_Clash`。
+- 保留轻量广告、HTTPDNS、DNS 劫持和隐私修复规则；默认不再输出 `privacy-protection-tools/anti-AD` 和 `REIJI007/AdBlock_Rule_For_Clash` 两个超大规则集，降低 Stash 等客户端导入后退出代理的概率。
 - 规则源直接使用 `raw.githubusercontent.com`，不再默认添加 `https://mirror.ghproxy.com/` 前缀。
 - 修复并增强节点解析：SS SIP002、URL 编码 Base64、VLESS IPv6、VLESS Reality、Shadowrocket 风格 VLESS 链接。
 - 默认对 Clash / Mihomo 输出加入更稳的基础项，例如 `allow-lan: false`、`ipv6: false`、`unified-delay: true`、`tcp-concurrent: true`。
+
+## 单独加上的功能
+
+- Matrix 可视化自定义规则：在后台新建策略组、写入域名/IP 规则，无需手写完整模板。
+- TikTok 独立策略组，BiliBili 默认直连。
+- Stash 一键导入强制使用 Clash YAML 链接。
+- Fetch Proxy 支持自定义 User-Agent，用于处理部分机场屏蔽 Cloudflare 拉取的问题。
+- 策略组图标、Matrix 规则源、节点解析和 Stash 兼容性均做了定制优化。
 
 ## 支持协议
 
@@ -45,6 +53,8 @@ Clash Matrix Studio 继承 MiSub 的 Cloudflare Pages + Vue 管理台 + Pages Fu
 - 第三方 subconverter 后端模式
 
 ## 部署到 Cloudflare Pages
+
+新手请优先阅读完整教程：[小白部署教程](docs/DEPLOYMENT_ZH.md)。
 
 1. Fork 或上传本仓库。
 2. 进入 Cloudflare Dashboard。
