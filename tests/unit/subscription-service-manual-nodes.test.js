@@ -40,7 +40,7 @@ describe('subscription-service 手动节点健壮性', () => {
             '',
             {
                 enableManualNodes: true,
-                manualNodePrefix: '手动节点',
+                manualNodePrefix: '自定义前缀',
                 enableSubscriptions: true
             },
             false
@@ -48,7 +48,7 @@ describe('subscription-service 手动节点健壮性', () => {
 
         expect(typeof result).toBe('string');
         expect(result).toContain('trojan://pass@example.com:443#');
-        expect(result).toContain(encodeURIComponent('手动节点 - 正常节点'));
+        expect(result).toContain(encodeURIComponent('自定义前缀 - 正常节点'));
     });
 
     it('使用 Fetch Proxy 时应通过 ua 参数把有效 UA 传给代理', async () => {
@@ -162,5 +162,53 @@ describe('subscription-service 手动节点健壮性', () => {
         expect(proxies).toHaveLength(1);
         expect(proxies[0].type).toBe('ssr');
         expect(proxies[0].name).toContain('月兔 - 台湾 1');
+    });
+    it('does not prepend the default manual node label when no prefix is configured', async () => {
+        const result = await generateCombinedNodeList(
+            {},
+            { enableAccessLog: false },
+            'ClashMeta',
+            [{
+                id: 'manual-1',
+                name: 'CustomNode',
+                url: 'trojan://pass@example.com:443#original',
+                enabled: true
+            }],
+            '',
+            {
+                enableManualNodes: false,
+                manualNodePrefix: '',
+                enableSubscriptions: true
+            },
+            false
+        );
+
+        expect(result).toContain(encodeURIComponent('CustomNode'));
+        expect(result).not.toContain(encodeURIComponent('手动节点'));
+        expect(result).not.toContain(encodeURIComponent('Manual Node'));
+    });
+
+    it('ignores the legacy default manual node label even when old settings enabled it', async () => {
+        const result = await generateCombinedNodeList(
+            {},
+            { enableAccessLog: false },
+            'ClashMeta',
+            [{
+                id: 'manual-legacy',
+                name: 'LegacyCustomNode',
+                url: 'trojan://pass@example.com:443#original',
+                enabled: true
+            }],
+            '',
+            {
+                enableManualNodes: true,
+                manualNodePrefix: '手动节点',
+                enableSubscriptions: true
+            },
+            false
+        );
+
+        expect(result).toContain(encodeURIComponent('LegacyCustomNode'));
+        expect(result).not.toContain(encodeURIComponent('手动节点'));
     });
 });

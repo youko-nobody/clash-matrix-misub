@@ -639,8 +639,8 @@ export async function handleMisubRequest(context) {
             if (profilePrefixSettings.enableSubscriptions !== null && profilePrefixSettings.enableSubscriptions !== undefined) {
                 effectivePrefixSettings.enableSubscriptions = profilePrefixSettings.enableSubscriptions;
             }
-            if (profilePrefixSettings.manualNodePrefix && profilePrefixSettings.manualNodePrefix.trim() !== '') {
-                effectivePrefixSettings.manualNodePrefix = profilePrefixSettings.manualNodePrefix;
+            if (typeof profilePrefixSettings.manualNodePrefix === 'string') {
+                effectivePrefixSettings.manualNodePrefix = profilePrefixSettings.manualNodePrefix.trim();
             }
         }
 

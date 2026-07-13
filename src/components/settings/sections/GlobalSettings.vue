@@ -20,9 +20,9 @@ const prefixToggleOptions = [
 ];
 
 const buildDefaultPrefixSettings = () => ({
-  enableManualNodes: true,
+  enableManualNodes: false,
   enableSubscriptions: true,
-  manualNodePrefix: 'Manual Node',
+  manualNodePrefix: '',
   prependGroupName: false
 });
 

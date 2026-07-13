@@ -26,9 +26,9 @@ export const DEFAULT_SETTINGS = {
     storageType: 'kv',
     autoUpdateInterval: 0, // 分钟，0表示禁用自动更新
 defaultPrefixSettings: {
-enableManualNodes: true,
+enableManualNodes: false,
 enableSubscriptions: true,
-manualNodePrefix: '\u624b\u52a8\u8282\u70b9',
+manualNodePrefix: '',
 subscriptionPrefix: '',
 prependGroupName: false
 },
@@ -167,9 +167,9 @@ export const DEFAULT_PROFILE_FORM = {
     manualNodes: [],
     enabled: true,
 prefixSettings: {
-enableManualNodes: true,
+enableManualNodes: false,
 enableSubscriptions: true,
-manualNodePrefix: '\u624b\u52a8\u8282\u70b9',
+manualNodePrefix: '',
 subscriptionPrefix: '',
 prependGroupName: null
 },

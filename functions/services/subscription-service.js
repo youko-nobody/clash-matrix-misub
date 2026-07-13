@@ -306,7 +306,7 @@ function createConcurrencyLimiter(limit) {
  */
 export async function generateCombinedNodeList(context, config, userAgent, misubs, prependedContent = '', profilePrefixSettings = null, debug = false, skipCertVerify = false) {
 // 判断是否启用手动节点前缀
-const shouldPrependManualNodes = profilePrefixSettings?.enableManualNodes ?? true;
+const shouldPrependManualNodes = profilePrefixSettings?.enableManualNodes ?? false;
 
 // 判断是否在节点名称前添加分组名称
 const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
@@ -334,7 +334,11 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
     }
 
     // 手动节点前缀文本
-    const manualNodePrefix = profilePrefixSettings?.manualNodePrefix ?? '\u624b\u52a8\u8282\u70b9';
+    const rawManualNodePrefix = typeof profilePrefixSettings?.manualNodePrefix === 'string'
+        ? profilePrefixSettings.manualNodePrefix.trim()
+        : '';
+    const defaultManualNodePrefixes = new Set(['\u624b\u52a8\u8282\u70b9', 'Manual Node']);
+    const manualNodePrefix = defaultManualNodePrefixes.has(rawManualNodePrefix) ? '' : rawManualNodePrefix;
 
     // [重要] 当智能重命名模板启用时，跳过前缀添加，因为智能重命名会完全覆盖节点名称
     // 用户可以在模板中使用 {name} 变量来保留原始信息
@@ -387,7 +391,7 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
             const nodeGroup = typeof sub.group === 'string' ? sub.group.trim() : '';
             if (prependGroupName && nodeGroup && !skipPrefixDueToRenaming) processedUrl = prependNodeName(processedUrl, nodeGroup);
             
-            const shouldAddPrefix = shouldPrependManualNodes && !skipPrefixDueToRenaming;
+            const shouldAddPrefix = shouldPrependManualNodes && manualNodePrefix && !skipPrefixDueToRenaming;
             const finalRawUrl = shouldAddPrefix ? prependNodeName(processedUrl, manualNodePrefix) : processedUrl;
 
             // [核心对齐] 对手动节点应用订阅源级转换（算子+过滤 + 组级诊断）

@@ -42,9 +42,9 @@ export const DEFAULT_SETTINGS = {
     maxSubscriptionConcurrency: 3,     // 最大订阅并发数
     defaultUserAgent: 'clash-meta/2.5.0', // 默认User-Agent
     defaultPrefixSettings: {
-        enableManualNodes: true,
+        enableManualNodes: false,
         enableSubscriptions: true,
-        manualNodePrefix: '手动节点',
+        manualNodePrefix: '',
         prependGroupName: false
     },
     defaultOperators: [], // 新版操作符链式处理 (New Unified Pipeline)
