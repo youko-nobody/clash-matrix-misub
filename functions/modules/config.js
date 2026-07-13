@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS = {
     NotifyThresholdDays: 3,
     NotifyThresholdPercent: 90,
     enableTrafficNode: false,
+    enableSubscriptionUserInfoHeader: false,
     enableFlagEmoji: true,
     enablePublicPage: true,
     storageType: 'kv',
@@ -50,6 +51,8 @@ export const DEFAULT_SETTINGS = {
     defaultOperators: [], // 新版操作符链式处理 (New Unified Pipeline)
     regionOverrides: [], // 自定义节点地区覆盖规则：{ pattern, region, flags }
     // @deprecated 使用 defaultOperators 代替
+    customMatrixGroups: [],
+    customMatrixRules: [],
     defaultNodeTransform: {
         enabled: false,
         filter: {

@@ -7,7 +7,8 @@ import { parseNodeList } from '../modules/utils/node-parser.js';
 import { parseNodeInfo } from '../modules/utils/geo-utils.js';
 import { getProcessedUserAgent } from '../utils/format-utils.js';
 import { buildFetchProxyUrl } from '../utils/fetch-proxy-utils.js';
-import { prependNodeName, addFlagEmoji, removeFlagEmoji, fixNodeUrlEncoding, sanitizeNodeForYaml } from '../utils/node-utils.js';
+import { buildSubscriptionFetchUserAgents } from '../modules/subscription/fetch-user-agents.js';
+import { prependNodeName, addFlagEmoji, removeFlagEmoji, fixNodeUrlEncoding } from '../utils/node-utils.js';
 import { runOperatorChain } from '../utils/operator-runner.js';
 import { createTimeoutFetch } from '../modules/utils.js';
 import { assertPublicNetworkUrl } from '../modules/security-utils.js';
@@ -337,7 +338,7 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
     const rawManualNodePrefix = typeof profilePrefixSettings?.manualNodePrefix === 'string'
         ? profilePrefixSettings.manualNodePrefix.trim()
         : '';
-    const defaultManualNodePrefixes = new Set(['\u624b\u52a8\u8282\u70b9', 'Manual Node']);
+    const defaultManualNodePrefixes = new Set(['\u624b\u52a8\u8282\u70b9', '\u624b\u52a8\u9009\u62e9', 'Manual Node', 'Manual Select']);
     const manualNodePrefix = defaultManualNodePrefixes.has(rawManualNodePrefix) ? '' : rawManualNodePrefix;
 
     // [重要] 当智能重命名模板启用时，跳过前缀添加，因为智能重命名会完全覆盖节点名称
@@ -436,6 +437,7 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
             const customUserAgent = typeof sub.customUserAgent === 'string' ? sub.customUserAgent.trim() : '';
             const processedUserAgent = customUserAgent || getProcessedUserAgent(userAgent, sub.url);
             const requestHeaders = { 'User-Agent': processedUserAgent };
+            let responseUserAgent = processedUserAgent;
 
             // [Fetch Proxy] 获取单点订阅专属拉取代理前缀
             assertPublicNetworkUrl(sub.url);
@@ -457,7 +459,7 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
             }
             requestUrl = assertPublicNetworkUrl(requestUrl).toString();
 
-            const response = await fetchWithRetry(requestUrl, {
+            let response = await fetchWithRetry(requestUrl, {
                 headers: requestHeaders,
                 redirect: "follow",
                 ...(skipCertVerify ? {
@@ -468,6 +470,51 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
                     }
                 } : {})
             });
+
+            if (!response.ok) {
+                const fallbackUserAgents = buildSubscriptionFetchUserAgents({
+                    preferredUserAgent: processedUserAgent,
+                    sourceUrl: sub.url,
+                    baseUserAgent: userAgent || 'v2rayN/7.23'
+                }).filter(ua => ua.toLowerCase() !== processedUserAgent.toLowerCase());
+
+                for (const fallbackUserAgent of fallbackUserAgents) {
+                    let fallbackRequestUrl = sub.url;
+
+                    if (cacheEnabled) {
+                        try {
+                            const parsedUrl = new URL(fallbackRequestUrl);
+                            parsedUrl.searchParams.set('_t', Date.now().toString());
+                            fallbackRequestUrl = parsedUrl.toString();
+                        } catch (e) {
+                            fallbackRequestUrl += (fallbackRequestUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                        }
+                    }
+
+                    if (sub.fetchProxy && typeof sub.fetchProxy === 'string' && sub.fetchProxy.trim()) {
+                        fallbackRequestUrl = buildFetchProxyUrl(sub.fetchProxy, fallbackRequestUrl, fallbackUserAgent);
+                    }
+                    fallbackRequestUrl = assertPublicNetworkUrl(fallbackRequestUrl).toString();
+
+                    const fallbackResponse = await fetchWithRetry(fallbackRequestUrl, {
+                        headers: { 'User-Agent': fallbackUserAgent },
+                        redirect: "follow",
+                        ...(skipCertVerify ? {
+                            cf: {
+                                insecureSkipVerify: true,
+                                allowUntrusted: true,
+                                validateCertificate: false
+                            }
+                        } : {})
+                    });
+
+                    if (fallbackResponse.ok) {
+                        response = fallbackResponse;
+                        responseUserAgent = fallbackUserAgent;
+                        break;
+                    }
+                }
+            }
 
             if (!response.ok) {
                 recordEmptyRuntimeInfo();
@@ -487,6 +534,64 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
                 const fallbackNodes = parseNodeList(fallbackText);
                 if (fallbackNodes.length > 0) {
                     fallbackParsedObjects = fallbackNodes;
+                }
+            }
+
+            if (fallbackParsedObjects.length === 0) {
+                const fallbackUserAgents = buildSubscriptionFetchUserAgents({
+                    preferredUserAgent: responseUserAgent,
+                    sourceUrl: sub.url,
+                    baseUserAgent: userAgent || 'v2rayN/7.23'
+                }).filter(ua => ua.toLowerCase() !== responseUserAgent.toLowerCase());
+
+                for (const fallbackUserAgent of fallbackUserAgents) {
+                    let fallbackRequestUrl = sub.url;
+
+                    if (cacheEnabled) {
+                        try {
+                            const parsedUrl = new URL(fallbackRequestUrl);
+                            parsedUrl.searchParams.set('_t', Date.now().toString());
+                            fallbackRequestUrl = parsedUrl.toString();
+                        } catch (e) {
+                            fallbackRequestUrl += (fallbackRequestUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                        }
+                    }
+
+                    if (sub.fetchProxy && typeof sub.fetchProxy === 'string' && sub.fetchProxy.trim()) {
+                        fallbackRequestUrl = buildFetchProxyUrl(sub.fetchProxy, fallbackRequestUrl, fallbackUserAgent);
+                    }
+                    fallbackRequestUrl = assertPublicNetworkUrl(fallbackRequestUrl).toString();
+
+                    const fallbackResponse = await fetchWithRetry(fallbackRequestUrl, {
+                        headers: { 'User-Agent': fallbackUserAgent },
+                        redirect: "follow",
+                        ...(skipCertVerify ? {
+                            cf: {
+                                insecureSkipVerify: true,
+                                allowUntrusted: true,
+                                validateCertificate: false
+                            }
+                        } : {})
+                    });
+
+                    if (!fallbackResponse.ok) continue;
+
+                    const fallbackBuffer = await fallbackResponse.arrayBuffer();
+                    let fallbackText = new TextDecoder('utf-8').decode(fallbackBuffer);
+                    fallbackText = await decodeBase64Content(fallbackText);
+                    let fallbackNodes = parseNodeList(fallbackText);
+
+                    if (fallbackNodes.length === 0) {
+                        const encodedFallbackText = await decodeBase64Content(encodeArrayBufferToBase64(fallbackBuffer));
+                        fallbackNodes = parseNodeList(encodedFallbackText);
+                    }
+
+                    if (fallbackNodes.length > 0) {
+                        fallbackParsedObjects = fallbackNodes;
+                        response = fallbackResponse;
+                        responseUserAgent = fallbackUserAgent;
+                        break;
+                    }
                 }
             }
 
@@ -588,10 +693,7 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
 
     // --- 阶段 3: 后置格式化与增强 (Post-Formatting & Enhancement) ---
     
-    // 3.1 YAML 兼容性净化
-    currentLines = currentLines.map(line => sanitizeNodeForYaml(line));
-
-    // 3.2 最终智能化补齐 (Flag Emoji)
+    // 3.1 最终智能化补齐 (Flag Emoji)
     const finalLines = shouldKeepEmoji 
         ? currentLines.map(line => addFlagEmoji(line))
         : currentLines;
@@ -714,7 +816,8 @@ async function decodeBase64Content(text) {
  * @returns {string} - 应用名称后的URL
  */
 function applyManualNodeName(nodeUrl, customName) {
-    if (!customName) return nodeUrl;
+    const displayName = cleanManualNodeDisplayName(customName);
+    if (!displayName) return nodeUrl;
 
     // vmess 协议：修改 base64 解码后 JSON 中的 ps 字段
     if (nodeUrl.startsWith('vmess://')) {
@@ -744,7 +847,7 @@ function applyManualNodeName(nodeUrl, customName) {
 
             // 类型校验：确保是对象
             if (nodeConfig && typeof nodeConfig === 'object') {
-                nodeConfig.ps = customName;
+                nodeConfig.ps = displayName;
 
                 const newJsonString = JSON.stringify(nodeConfig);
                 const newBase64Part = btoa(unescape(encodeURIComponent(newJsonString)));
@@ -759,10 +862,15 @@ function applyManualNodeName(nodeUrl, customName) {
     try {
         const hashIndex = nodeUrl.lastIndexOf('#');
         const baseLink = hashIndex !== -1 ? nodeUrl.substring(0, hashIndex) : nodeUrl;
-        return `${baseLink}#${encodeURIComponent(customName)}`;
+        return `${baseLink}#${encodeURIComponent(displayName)}`;
     } catch (e) {
         return nodeUrl;
     }
+}
+
+function cleanManualNodeDisplayName(name) {
+    return String(name || '')
+        .trim();
 }
 
 

@@ -95,6 +95,49 @@ describe('handleNodeCountRequest error body handling', () => {
         }
     });
 
+    it('reuses the Clash traffic response when the requested node-count UA is rejected', async () => {
+        const adapter = createAdapter({
+            settings: { builtinSkipCertVerify: false },
+            subscriptions: [{ id: 'sub-a', url: 'https://airport.example/sub' }]
+        });
+        vi.spyOn(StorageFactory, 'getStorageType').mockResolvedValue('kv');
+        vi.spyOn(StorageFactory, 'createAdapter').mockReturnValue(adapter);
+
+        const clashYaml = `proxies:\n  - name: HK 1\n    type: trojan\n    server: example.com\n    port: 443\n    password: pass\n`;
+        const fetchSpy = vi.fn(async (request) => {
+            const ua = request.headers.get('user-agent');
+            if (ua === 'clash-verge/v2.4.3') {
+                return new Response(clashYaml, {
+                    status: 200,
+                    headers: {
+                        'subscription-userinfo': 'upload=1; download=2; total=100; expire=200'
+                    }
+                });
+            }
+            return new Response('Forbidden', { status: 403, statusText: 'Forbidden' });
+        });
+        vi.stubGlobal('fetch', fetchSpy);
+
+        const request = new Request('http://local/api/node_count', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ url: 'https://airport.example/sub', userAgent: 'Mozilla/5.0' })
+        });
+
+        const response = await handleNodeCountRequest(request, {});
+        const data = await response.json();
+
+        expect(data.success).toBe(true);
+        expect(data.data.count).toBe(1);
+        expect(data.data.userInfo).toEqual({
+            upload: 1,
+            download: 2,
+            total: 100,
+            expire: 200
+        });
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
     it('only skips certificate verification for node count when enabled in settings', async () => {
         const adapter = createAdapter({
             settings: { builtinSkipCertVerify: true },

@@ -39,7 +39,7 @@ const urlSchemeMap = {
     'shadowrocket': 'shadowrocket://add/sub://{url_base64}?remark={name}',
     'hiddify': 'hiddify://import/{url}',
     'nekobox': 'nekobox://install-config?name={name}&type=SUBSCRIPTION&url={url}',
-    'stash': 'stash://install-config?url={url}&name={name}',
+    'stash': 'stash://install-config?url={url_clash}&name={name}',
     'loon': 'loon://import?sub={url}&name={name}',
     'egern': 'egern:/profiles/new?name={name}&url={url}',
     'surge': 'surge:///install-config?url={url}',

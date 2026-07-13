@@ -106,6 +106,17 @@ function getCurrentRequestUserInfo(context, sub) {
 }
 
 function buildUserInfoHeaderFromSubscriptions(context, subscriptions) {
+    const userInfoParam = context?.url?.searchParams?.get('userinfo');
+    const shouldExposeUserInfo = userInfoParam === '1' || userInfoParam === 'true'
+        ? true
+        : userInfoParam === '0' || userInfoParam === 'false'
+            ? false
+            : context?.config?.enableSubscriptionUserInfoHeader === true;
+
+    if (!shouldExposeUserInfo) {
+        return null;
+    }
+
     const strategy = context?.config?.mergeExpireStrategy || 'max';
     const totalUserInfo = subscriptions.reduce((acc, sub) => {
         const userInfo = sub?.enabled ? getCurrentRequestUserInfo(context, sub) : null;
@@ -777,6 +788,8 @@ export async function handleMisubRequest(context) {
                     enableTfo: urlTfo === 'true' || urlTfo === '1',
                     ruleLevel,
                     regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
+                    customMatrixGroups: Array.isArray(config.customMatrixGroups) ? config.customMatrixGroups : [],
+                    customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
                     isMeta: isMetaCore(userAgentHeader, url.searchParams)
                 };
                 const rendered = await ProcessorService.renderOutput({
@@ -943,6 +956,8 @@ export async function handleMisubRequest(context) {
         enableTfo: finalEnableTfo,
         ruleLevel: ruleLevel, // 统一后的规则等级
         regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
+        customMatrixGroups: Array.isArray(config.customMatrixGroups) ? config.customMatrixGroups : [],
+        customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
         isMeta: isMetaCore(userAgentHeader, url.searchParams)
     };
 

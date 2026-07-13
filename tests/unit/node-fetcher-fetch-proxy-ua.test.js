@@ -44,4 +44,25 @@ describe('fetchSubscriptionNodes fetch proxy UA forwarding', () => {
         expect(calledUrl).toContain('ua=clash-verge%2Fv2.4.3');
         expect(calledUrl).toContain('url=http%3A%2F%2F47.242.55.240%2Flink%2Ftoken%3Fclash%3D2');
     });
+    it('retries with a proxy-client UA when the preferred UA is rejected', async () => {
+        const clashYaml = `proxies:\n  - name: HK 1\n    type: trojan\n    server: example.com\n    port: 443\n    password: pass\n`;
+        global.fetch = vi.fn(async (request, init = {}) => {
+            const ua = request?.headers?.get?.('user-agent') || init.headers?.['User-Agent'];
+            if (ua === 'clash-verge/v2.4.3') {
+                return new Response(clashYaml, { status: 200 });
+            }
+            return new Response('Forbidden', { status: 403, statusText: 'Forbidden' });
+        });
+
+        const result = await fetchSubscriptionNodes(
+            'https://airport.example/sub',
+            'Airport',
+            'Mozilla/5.0'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.nodes).toHaveLength(1);
+        expect(global.fetch.mock.calls.map(([request, init = {}]) => request?.headers?.get?.('user-agent') || init.headers?.['User-Agent']))
+            .toContain('clash-verge/v2.4.3');
+    });
 });

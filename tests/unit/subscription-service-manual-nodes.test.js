@@ -211,4 +211,51 @@ describe('subscription-service 手动节点健壮性', () => {
         expect(result).toContain(encodeURIComponent('LegacyCustomNode'));
         expect(result).not.toContain(encodeURIComponent('手动节点'));
     });
+    it('ignores the legacy manual select label even when old settings enabled it', async () => {
+        const result = await generateCombinedNodeList(
+            {},
+            { enableAccessLog: false },
+            'ClashMeta',
+            [{
+                id: 'manual-select-legacy',
+                name: 'CustomNode',
+                url: 'trojan://pass@example.com:443#original',
+                enabled: true
+            }],
+            '',
+            {
+                enableManualNodes: true,
+                manualNodePrefix: '\u624B\u52A8\u9009\u62E9',
+                enableSubscriptions: true
+            },
+            false
+        );
+
+        expect(result).toContain(encodeURIComponent('CustomNode'));
+        expect(result).not.toContain(encodeURIComponent('\u624B\u52A8\u9009\u62E9'));
+    });
+
+    it('preserves original manual node names with separator characters', async () => {
+        const originalName = '|\uD83C\uDDFA\uD83C\uDDF8|DMIT\u7F8E\u897F|Reality|';
+        const result = await generateCombinedNodeList(
+            {},
+            { enableAccessLog: false },
+            'ClashMeta',
+            [{
+                id: 'manual-original-name',
+                name: originalName,
+                url: 'vless://11111111-1111-1111-1111-111111111111@example.com:443?encryption=none&security=tls#original',
+                enabled: true
+            }],
+            '',
+            {
+                enableManualNodes: false,
+                manualNodePrefix: '',
+                enableSubscriptions: true
+            },
+            false
+        );
+
+        expect(result).toContain(encodeURIComponent(originalName));
+    });
 });

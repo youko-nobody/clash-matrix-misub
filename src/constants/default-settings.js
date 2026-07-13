@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS = {
     NotifyThresholdDays: 3,
     NotifyThresholdPercent: 90,
     enableTrafficNode: false,
+    enableSubscriptionUserInfoHeader: false,
     enableFlagEmoji: true,
     enablePublicPage: true,
     storageType: 'kv',
@@ -74,6 +75,8 @@ prependGroupName: false
     },
     nodeTransformPresets: [],
     regionOverrides: [],
+    customMatrixGroups: [],
+    customMatrixRules: [],
     // 公告设置
     announcement: {
         enabled: true,            // 是否启用公告

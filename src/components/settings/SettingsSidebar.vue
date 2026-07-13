@@ -17,6 +17,7 @@ const tabs = [
   { id: 'home', labelKey: 'settings.tabs.home' },
   { id: 'custom-page', labelKey: 'settings.tabs.customPage' },
   { id: 'global', labelKey: 'settings.tabs.global' },
+  { id: 'rules', label: '自定义规则' },
   { id: 'service', labelKey: 'settings.tabs.service' },
   { id: 'client', labelKey: 'settings.tabs.client' },
   { id: 'system', labelKey: 'settings.tabs.system' },
@@ -45,6 +46,9 @@ const tabs = [
           <path v-if="tab.id === 'global'" stroke-linecap="round" stroke-linejoin="round"
             d="M12 3c-4.418 0-8 3.134-8 7s3.582 7 8 7 8-3.134 8-7-3.582-7-8-7zm0 10.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7zm0 5.5v2m-4-3l-1.5 1.5m9-1.5L16 19.5m-9-9H3m18 0h-4" />
 
+          <path v-if="tab.id === 'rules'" stroke-linecap="round" stroke-linejoin="round"
+            d="M9 6h11M9 12h11M9 18h11M5 6h.01M5 12h.01M5 18h.01" />
+
           <path v-if="tab.id === 'service'" stroke-linecap="round" stroke-linejoin="round"
             d="M13 10V3L4 14h7v7l9-11h-7z" />
 
@@ -57,7 +61,7 @@ const tabs = [
           <path v-if="tab.id === 'custom-page'" stroke-linecap="round" stroke-linejoin="round"
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      {{ t(tab.labelKey) }}
+      {{ tab.label || t(tab.labelKey) }}
     </button>
   </nav>
 </template>

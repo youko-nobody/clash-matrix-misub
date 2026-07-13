@@ -11,6 +11,7 @@ import BasicSettings from '../components/settings/sections/BasicSettings.vue';
 import HomeSettings from '../components/settings/sections/HomeSettings.vue';
 import ServiceSettings from '../components/settings/sections/ServiceSettings.vue';
 import GlobalSettings from '../components/settings/sections/GlobalSettings.vue';
+import CustomRuleSettings from '../components/settings/sections/CustomRuleSettings.vue';
 
 import SystemSettings from '../components/settings/sections/SystemSettings.vue';
 import WebdavBackupSettings from '../components/settings/sections/WebdavBackupSettings.vue';
@@ -45,6 +46,7 @@ const currentTabLabel = computed(() => {
     case 'basic': return t('settings.tabs.basic');
     case 'home': return t('settings.tabs.home');
     case 'global': return t('settings.tabs.global');
+    case 'rules': return '自定义规则';
     case 'service': return t('settings.tabs.service');
 
     case 'client': return t('settings.tabs.client');
@@ -112,6 +114,7 @@ watch(() => route.path, (path) => {
         <BasicSettings v-show="activeTab === 'basic'" :settings="settings" :disguiseConfig="disguiseConfig" />
         <HomeSettings v-show="activeTab === 'home'" :settings="settings" />
         <GlobalSettings v-show="activeTab === 'global'" :settings="settings" />
+        <CustomRuleSettings v-show="activeTab === 'rules'" :settings="settings" />
         <ServiceSettings v-show="activeTab === 'service'" :settings="settings" />
         <ClientSettings v-show="activeTab === 'client'" />
         <CustomPageSettings v-show="activeTab === 'custom-page'" :settings="settings" />

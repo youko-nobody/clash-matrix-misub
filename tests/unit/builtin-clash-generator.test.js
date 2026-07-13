@@ -100,4 +100,23 @@ describe('Clash 内置生成器', () => {
         expect(autoGroup.tolerance).toBe(50);
         expect(autoGroup).not.toHaveProperty('options');
     });
+
+    it('renders Matrix policy group icons without changing group names', () => {
+        const node = 'ss://YWVzLTEyOC1nY206cGFzc3dvcmQ=@1.2.3.4:8388#MatrixNode';
+        const parsed = yaml.load(generateBuiltinClashConfig(node, { ruleLevel: 'matrix' }));
+        const groups = new Map(parsed['proxy-groups'].map(group => [group.name, group]));
+
+        expect(groups.get('PROXY')?.icon).toBe('https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png');
+        expect(groups.get('Emby代理')?.icon).toContain('/Emby.png');
+        expect(groups.get('TG')?.icon).toContain('/Telegram.png');
+        expect(groups.get('AI')?.icon).toContain('/AI.png');
+        expect(groups.get('YOUTUBE')?.icon).toContain('/YouTube.png');
+        expect(groups.get('TIKTOK')?.icon).toContain('/TikTok.png');
+        expect(groups.get('FINAL')?.icon).toContain('/Final.png');
+        expect(groups.get('BLOCK')?.icon).toContain('/Reject.png');
+        expect(groups.get('APPLE')?.icon).toContain('/Apple.png');
+        expect(groups.get('BANK')?.icon).toContain('/PayPal.png');
+        expect(groups.get('FINANCE')?.icon).toContain('/PayPal.png');
+        expect(groups.has('🚀 PROXY')).toBe(false);
+    });
 });

@@ -12,6 +12,103 @@ export const MATRIX_PROXY_GROUP = 'PROXY';
 export const MATRIX_AUTO_GROUP = '♻️ 自动测速';
 export const MATRIX_FINAL_GROUP = 'FINAL';
 
+const MATRIX_GROUP_ICON_BASE = 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color';
+const MATRIX_GROUP_ICONS = {
+    [MATRIX_PROXY_GROUP]: `${MATRIX_GROUP_ICON_BASE}/Proxy.png`,
+    'Emby代理': `${MATRIX_GROUP_ICON_BASE}/Emby.png`,
+    TG: `${MATRIX_GROUP_ICON_BASE}/Telegram.png`,
+    AI: `${MATRIX_GROUP_ICON_BASE}/AI.png`,
+    YOUTUBE: `${MATRIX_GROUP_ICON_BASE}/YouTube.png`,
+    TIKTOK: `${MATRIX_GROUP_ICON_BASE}/TikTok.png`,
+    [MATRIX_FINAL_GROUP]: `${MATRIX_GROUP_ICON_BASE}/Final.png`,
+    BLOCK: `${MATRIX_GROUP_ICON_BASE}/Reject.png`,
+    APPLE: `${MATRIX_GROUP_ICON_BASE}/Apple.png`,
+    BANK: `${MATRIX_GROUP_ICON_BASE}/PayPal.png`,
+    FINANCE: `${MATRIX_GROUP_ICON_BASE}/PayPal.png`,
+    'FAKE-LOCATION': `${MATRIX_GROUP_ICON_BASE}/Rainbow.png`,
+    [MATRIX_AUTO_GROUP]: `${MATRIX_GROUP_ICON_BASE}/Speedtest.png`
+};
+
+export const MATRIX_BASE_TARGETS = [
+    'DIRECT',
+    'REJECT',
+    'PROXY',
+    'Emby代理',
+    'TG',
+    'AI',
+    'YOUTUBE',
+    'TIKTOK',
+    'FINAL',
+    'BLOCK',
+    'APPLE',
+    'BANK',
+    'FINANCE',
+    'FAKE-LOCATION',
+    MATRIX_AUTO_GROUP
+];
+
+const MATRIX_RESERVED_GROUPS = new Set([
+    ...MATRIX_BASE_TARGETS,
+    'REJECT-DROP',
+    MATRIX_PROXY_GROUP,
+    MATRIX_FINAL_GROUP
+]);
+
+const MATRIX_CUSTOM_RULE_TYPES = new Set([
+    'DOMAIN-SUFFIX',
+    'DOMAIN',
+    'DOMAIN-KEYWORD',
+    'IP-CIDR',
+    'IP-CIDR6',
+    'GEOIP'
+]);
+
+function cleanMatrixText(value = '', maxLength = 120) {
+    return String(value || '')
+        .replace(/[\u0000-\u001F\u007F]/g, '')
+        .replace(/["'\\]/g, '')
+        .trim()
+        .slice(0, maxLength);
+}
+
+export function normalizeCustomMatrixGroups(groups = []) {
+    if (!Array.isArray(groups)) return [];
+    const seen = new Set();
+    const normalized = [];
+
+    for (const item of groups.slice(0, 30)) {
+        const name = cleanMatrixText(item?.name, 80);
+        if (!name || seen.has(name) || MATRIX_RESERVED_GROUPS.has(name)) continue;
+        const type = String(item?.type || 'select').toLowerCase() === 'url-test' ? 'url-test' : 'select';
+        seen.add(name);
+        normalized.push({ name, type });
+    }
+
+    return normalized;
+}
+
+export function normalizeCustomMatrixRules(rules = [], groups = []) {
+    if (!Array.isArray(rules)) return [];
+    const customTargets = normalizeCustomMatrixGroups(groups).map(group => group.name);
+    const validTargets = new Set([...customTargets, ...MATRIX_BASE_TARGETS]);
+    const normalized = [];
+
+    for (const item of rules.slice(0, 200)) {
+        const type = String(item?.type || '').trim().toUpperCase();
+        const value = cleanMatrixText(item?.value, 180).replace(/,/g, '');
+        const target = cleanMatrixText(item?.target, 80);
+        if (!MATRIX_CUSTOM_RULE_TYPES.has(type) || !value || !validTargets.has(target)) continue;
+        normalized.push(`${type},${value},${target}`);
+    }
+
+    return normalized;
+}
+
+function withMatrixIcon(group) {
+    const icon = MATRIX_GROUP_ICONS[group?.name];
+    return icon ? { ...group, icon } : group;
+}
+
 /**
  * 自动生成地区策略组（通用中间格式）
  * @param {Object[]} proxies 
@@ -192,6 +289,14 @@ export const POLICY_GROUPS = {
         const proxyMembers = [MATRIX_AUTO_GROUP, 'DIRECT', ...proxyNames];
         const proxyOrDirect = [MATRIX_PROXY_GROUP, 'DIRECT', ...proxyNames];
         const directFirst = ['DIRECT', MATRIX_PROXY_GROUP, ...proxyNames];
+        const customGroups = normalizeCustomMatrixGroups(options.customMatrixGroups);
+        const customPolicyGroups = customGroups.map(group => ({
+            name: group.name,
+            type: group.type,
+            proxies: group.type === 'url-test' ? [MATRIX_PROXY_GROUP, 'DIRECT', ...nodeMembers] : proxyOrDirect,
+            ...(group.type === 'url-test' ? { options: { url: 'http://www.google.com/blank.html', interval: 300, tolerance: 50 } } : {}),
+            icon: `${MATRIX_GROUP_ICON_BASE}/Available.png`
+        }));
 
         return [
             { name: MATRIX_PROXY_GROUP, type: 'select', proxies: proxyMembers },
@@ -206,13 +311,14 @@ export const POLICY_GROUPS = {
             { name: 'BANK', type: 'select', proxies: directFirst },
             { name: 'FINANCE', type: 'select', proxies: directFirst },
             { name: 'FAKE-LOCATION', type: 'select', proxies: proxyOrDirect },
+            ...customPolicyGroups,
             {
                 name: MATRIX_AUTO_GROUP,
                 type: 'url-test',
                 proxies: nodeMembers,
                 options: { url: 'http://www.google.com/blank.html', interval: 300, tolerance: 50 }
             }
-        ];
+        ].map(withMatrixIcon);
     }
 };
 
@@ -220,6 +326,12 @@ export const POLICY_GROUPS = {
  * 远程规则源配置 (对齐各平台最高性能格式)
  */
 const SING_GEOSITE_BASE = 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set';
+const ACCADEMIA_BASE = 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main';
+const accademia = (name, path, behavior = 'domain') => ({
+    name,
+    clash: `${ACCADEMIA_BASE}/${path}`,
+    behavior
+});
 
 export const REMOTE_SOURCES = {
     ADS: {
@@ -291,16 +403,9 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TikTok/TikTok.yaml',
         behavior: 'classical'
     },
-    ANTI_AD: {
-        name: 'anti-AD',
-        clash: 'https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-clash.yaml',
-        behavior: 'domain'
-    },
-    REIJI_ADBLOCK: {
-        name: 'AdBlock',
-        clash: 'https://raw.githubusercontent.com/REIJI007/AdBlock_Rule_For_Clash/main/adblock_reject.yaml',
-        behavior: 'classical'
-    },
+    PRE_REPAIR_EASY_PRIVACY_DIRECT: accademia('PreRepair EasyPrivacy DIRECT', 'PreRepairEasyPrivacy/PreRepairEasyPrivacy_DIRECT.yaml', 'classical'),
+    PRE_REPAIR_EASY_PRIVACY_PROXY: accademia('PreRepair EasyPrivacy PROXY', 'PreRepairEasyPrivacy/PreRepairEasyPrivacy_PROXY.yaml', 'classical'),
+    PRE_REPAIR_EASY_PRIVACY_REJECT: accademia('PreRepair EasyPrivacy REJECT', 'PreRepairEasyPrivacy/PreRepairEasyPrivacy_REJECT.yaml', 'classical'),
     BLOCK_HTTP_DNS_PLUS: {
         name: 'BlockHttpDNSPlus',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/BlockHttpDNSPlus/BlockHttpDNSPlus.yaml',
@@ -341,6 +446,7 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/AppleAI/AppleAI_Domain.yaml',
         behavior: 'domain'
     },
+    APPLE_NEWS_DOMAIN: accademia('Apple News', 'AppleNews/AppleNews_Domain.yaml'),
     APPLE_DOMAIN: {
         name: 'Apple Domain',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Apple/Apple_Domain.yaml',
@@ -356,6 +462,10 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/MicrosoftAPPs/MicrosoftAPPs_Domain.yaml',
         behavior: 'domain'
     },
+    ALIPAN_DOMAIN: accademia('Alipan', 'Alipan/Alipan_Domain.yaml'),
+    BAIDU_NETDISK_DOMAIN: accademia('Baidu NetDisk', 'BaiduNetDisk/BaiduNetDisk_Domain.yaml'),
+    WEIYUN_DOMAIN: accademia('WeiYun Domain', 'WeiYun/WeiYun_Domain.yaml'),
+    WEIYUN_IP: accademia('WeiYun IP', 'WeiYun/WeiYun_IP.yaml', 'ipcidr'),
     AQARA_CN_DOMAIN: {
         name: 'Aqara CN',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Aqara/AqaraCN._Domain.yaml',
@@ -371,6 +481,16 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Aqara/AqaraGlobal._IP.yaml',
         behavior: 'ipcidr'
     },
+    UNSUPPORT_VPN_DOMAIN: accademia('Unsupport VPN', 'UnsupportVPN/UnsupportVPN_Domain.yaml'),
+    BANK_AU_DOMAIN: accademia('Bank AU', 'Bank/BankAU_Domain.yaml'),
+    BANK_CA_DOMAIN: accademia('Bank CA', 'Bank/BankCA_Domain.yaml'),
+    BANK_DE_DOMAIN: accademia('Bank DE', 'Bank/BankDE_Domain.yaml'),
+    BANK_FR_DOMAIN: accademia('Bank FR', 'Bank/BankFR_Domain.yaml'),
+    BANK_HK_DOMAIN: accademia('Bank HK', 'Bank/BankHK_Domain.yaml'),
+    BANK_JP_DOMAIN: accademia('Bank JP', 'Bank/BankJP_Domain.yaml'),
+    BANK_NL_DOMAIN: accademia('Bank NL', 'Bank/BankNL_Domain.yaml'),
+    BANK_SG_DOMAIN: accademia('Bank SG', 'Bank/BankSG_Domain.yaml'),
+    BANK_UK_DOMAIN: accademia('Bank UK', 'Bank/BankUK_Domain.yaml'),
     BANK_US_DOMAIN: {
         name: 'Bank US',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankUS_Domain.yaml',
@@ -386,11 +506,70 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/VirtualFinance/Wise.yaml',
         behavior: 'classical'
     },
+    MONZO: accademia('Monzo', 'VirtualFinance/Monzo.yaml', 'classical'),
+    REVOLUT: accademia('Revolut', 'VirtualFinance/Revolut.yaml', 'classical'),
+    HOMEIP_JP: accademia('Home IP JP', 'HomeIP/HomeIPJP.yaml', 'classical'),
+    HOMEIP_US: accademia('Home IP US', 'HomeIP/HomeIPUS.yaml', 'classical'),
+    SIGNAL_DOMAIN: accademia('Signal', 'Signal/Signal_Domain.yaml'),
+    KWAI_DOMAIN: accademia('Kwai', 'Kwai/Kwai_Domain.yaml'),
+    PORNHUB_DOMAIN: accademia('Pornhub', 'Pornhub/Pornhub_Domain.yaml'),
+    WAYBACK_MACHINE_DOMAIN: accademia('Wayback Machine Domain', 'WaybackMachine/WaybackMachine_Domain.yaml'),
+    WAYBACK_MACHINE_IP: accademia('Wayback Machine IP', 'WaybackMachine/WaybackMachine_IP.yaml', 'ipcidr'),
+    FASTLY_IP: accademia('Fastly IP', 'Fastly/Fastly_IP.yaml', 'ipcidr'),
+    PARSEC_DOMAIN: accademia('Parsec', 'Parsec/Parsec_Domain.yaml'),
+    RUSTDESK_DOMAIN: accademia('RustDesk', 'RustDesk/RustDesk_Domain.yaml'),
+    MAC_APP_UPGRADE_DOMAIN: accademia('Mac App Upgrade', 'MacAppUpgrade/MacAppUpgrade_Domain.yaml'),
+    EMULE_SERVER_IP: accademia('eMule Server IP', 'eMuleServer/eMuleServer_IP.yaml', 'ipcidr'),
+    GLOBAL_DNS_DOMAIN: accademia('Global DNS Domain', 'GlobalDNS/GlobalDNS_Domain.yaml'),
+    GLOBAL_DNS_IP: accademia('Global DNS IP', 'GlobalDNS/GlobalDNS_IP.yaml', 'ipcidr'),
     FAKE_LOCATION_BILIBILI: {
         name: 'FakeLocation BiliBili',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationBiliBili.yaml',
         behavior: 'classical'
     },
+    FAKE_LOCATION_DOUBAN: accademia('FakeLocation DouBan', 'FakeLocation/FakeLocationDouBan.yaml', 'classical'),
+    FAKE_LOCATION_DOUYIN: accademia('FakeLocation DouYin', 'FakeLocation/FakeLocationDouYin.yaml', 'classical'),
+    FAKE_LOCATION_KUAISHOU: accademia('FakeLocation KuaiShou', 'FakeLocation/FakeLocationKuaiShou.yaml', 'classical'),
+    FAKE_LOCATION_TIEBA: accademia('FakeLocation TieBa', 'FakeLocation/FakeLocationTieBa.yaml', 'classical'),
+    FAKE_LOCATION_WEIBO: accademia('FakeLocation WeiBo', 'FakeLocation/FakeLocationWeiBo.yaml', 'classical'),
+    FAKE_LOCATION_XIGUA: accademia('FakeLocation XiGua', 'FakeLocation/FakeLocationXiGua.yaml', 'classical'),
+    FAKE_LOCATION_XIANYU: accademia('FakeLocation XianYu', 'FakeLocation/FakeLocationXianYu.yaml', 'classical'),
+    FAKE_LOCATION_XIAOHONGSHU: accademia('FakeLocation XiaoHongShu', 'FakeLocation/FakeLocationXiaoHongShu.yaml', 'classical'),
+    FAKE_LOCATION_ZHIHU: accademia('FakeLocation ZhiHu', 'FakeLocation/FakeLocationZhiHu.yaml', 'classical'),
+    GEO_ROUTING_AFRICA_CENTRAL_CCTLD_DOMAIN: accademia('GeoRouting Africa Central ccTLD', 'GeoRouting_For_Domain/GeoRouting_Africa_Central_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AFRICA_EAST_CCTLD_DOMAIN: accademia('GeoRouting Africa East ccTLD', 'GeoRouting_For_Domain/GeoRouting_Africa_East_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AFRICA_NORTH_CCTLD_DOMAIN: accademia('GeoRouting Africa North ccTLD', 'GeoRouting_For_Domain/GeoRouting_Africa_North_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AFRICA_SOUTH_CCTLD_DOMAIN: accademia('GeoRouting Africa South ccTLD', 'GeoRouting_For_Domain/GeoRouting_Africa_South_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AFRICA_WEST_CCTLD_DOMAIN: accademia('GeoRouting Africa West ccTLD', 'GeoRouting_For_Domain/GeoRouting_Africa_West_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AMERICA_NORTH_CCTLD_DOMAIN: accademia('GeoRouting America North ccTLD', 'GeoRouting_For_Domain/GeoRouting_America_North_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AMERICA_SOUTH_CCTLD_DOMAIN: accademia('GeoRouting America South ccTLD', 'GeoRouting_For_Domain/GeoRouting_America_South_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ANTARCTICA_CCTLD_DOMAIN: accademia('GeoRouting Antarctica ccTLD', 'GeoRouting_For_Domain/GeoRouting_Antarctica_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_CENTRAL_CCTLD_DOMAIN: accademia('GeoRouting Asia Central ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_Central_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_CHINA_CCTLD_DOMAIN: accademia('GeoRouting Asia China ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_China_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_EASTSOUTH_CCTLD_DOMAIN: accademia('GeoRouting Asia EastSouth ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_EastSouth_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_EAST_CCTLD_DOMAIN: accademia('GeoRouting Asia East ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_East_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_SOUTH_CCTLD_DOMAIN: accademia('GeoRouting Asia South ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_South_ccTLD_Domain.yaml'),
+    GEO_ROUTING_ASIA_WEST_CCTLD_DOMAIN: accademia('GeoRouting Asia West ccTLD', 'GeoRouting_For_Domain/GeoRouting_Asia_West_ccTLD_Domain.yaml'),
+    GEO_ROUTING_EUROPE_EAST_CCTLD_DOMAIN: accademia('GeoRouting Europe East ccTLD', 'GeoRouting_For_Domain/GeoRouting_Europe_East_ccTLD_Domain.yaml'),
+    GEO_ROUTING_EUROPE_WEST_CCTLD_DOMAIN: accademia('GeoRouting Europe West ccTLD', 'GeoRouting_For_Domain/GeoRouting_Europe_West_ccTLD_Domain.yaml'),
+    GEO_ROUTING_OCEANIA_CCTLD_DOMAIN: accademia('GeoRouting Oceania ccTLD', 'GeoRouting_For_Domain/GeoRouting_Oceania_ccTLD_Domain.yaml'),
+    GEO_ROUTING_AFRICA_CENTRAL_GEOIP: accademia('GeoRouting Africa Central GeoIP', 'GeoRouting_For_IP/GeoRouting_Africa_Central_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AFRICA_EAST_GEOIP: accademia('GeoRouting Africa East GeoIP', 'GeoRouting_For_IP/GeoRouting_Africa_East_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AFRICA_NORTH_GEOIP: accademia('GeoRouting Africa North GeoIP', 'GeoRouting_For_IP/GeoRouting_Africa_North_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AFRICA_SOUTH_GEOIP: accademia('GeoRouting Africa South GeoIP', 'GeoRouting_For_IP/GeoRouting_Africa_South_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AFRICA_WEST_GEOIP: accademia('GeoRouting Africa West GeoIP', 'GeoRouting_For_IP/GeoRouting_Africa_West_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AMERICA_NORTH_GEOIP: accademia('GeoRouting America North GeoIP', 'GeoRouting_For_IP/GeoRouting_America_North_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_AMERICA_SOUTH_GEOIP: accademia('GeoRouting America South GeoIP', 'GeoRouting_For_IP/GeoRouting_America_South_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ANTARCTICA_GEOIP: accademia('GeoRouting Antarctica GeoIP', 'GeoRouting_For_IP/GeoRouting_Antarctica_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_CENTRAL_GEOIP: accademia('GeoRouting Asia Central GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_Central_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_CHINA_GEOIP: accademia('GeoRouting Asia China GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_China_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_EASTSOUTH_GEOIP: accademia('GeoRouting Asia EastSouth GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_EastSouth_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_EAST_GEOIP: accademia('GeoRouting Asia East GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_East_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_SOUTH_GEOIP: accademia('GeoRouting Asia South GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_South_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_ASIA_WEST_GEOIP: accademia('GeoRouting Asia West GeoIP', 'GeoRouting_For_IP/GeoRouting_Asia_West_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_EUROPE_EAST_GEOIP: accademia('GeoRouting Europe East GeoIP', 'GeoRouting_For_IP/GeoRouting_Europe_East_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_EUROPE_WEST_GEOIP: accademia('GeoRouting Europe West GeoIP', 'GeoRouting_For_IP/GeoRouting_Europe_West_GeoIP.yaml', 'classical'),
+    GEO_ROUTING_OCEANIA_GEOIP: accademia('GeoRouting Oceania GeoIP', 'GeoRouting_For_IP/GeoRouting_Oceania_GeoIP.yaml', 'classical'),
     GEOSITE_CN_DOMAIN: {
         name: 'Geosite CN',
         clash: 'https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeositeCN/GeositeCN_Domain.yaml',
@@ -454,8 +633,9 @@ export const RULE_SETS = {
         `MATCH,${DEFAULT_RELAY_GROUP}`
     ],
     MATRIX: [
-        'RULE-SET,ANTI_AD,BLOCK',
-        'RULE-SET,REIJI_ADBLOCK,BLOCK',
+        'RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT',
+        'RULE-SET,PRE_REPAIR_EASY_PRIVACY_PROXY,PROXY',
+        'RULE-SET,PRE_REPAIR_EASY_PRIVACY_REJECT,BLOCK',
         'RULE-SET,BLOCK_HTTP_DNS_PLUS,BLOCK',
         'RULE-SET,CHINA_DNS_DOMAIN,BLOCK',
         'RULE-SET,CHINA_DNS_IP,BLOCK',
@@ -468,18 +648,92 @@ export const RULE_SETS = {
         'RULE-SET,BM_CLAUDE,AI',
         'RULE-SET,BM_TELEGRAM,TG',
         'RULE-SET,BM_YOUTUBE,YOUTUBE',
+        'RULE-SET,APPLE_NEWS_DOMAIN,PROXY',
+        'RULE-SET,SIGNAL_DOMAIN,PROXY',
+        'RULE-SET,KWAI_DOMAIN,PROXY',
+        'RULE-SET,PORNHUB_DOMAIN,PROXY',
+        'RULE-SET,WAYBACK_MACHINE_DOMAIN,PROXY',
+        'RULE-SET,WAYBACK_MACHINE_IP,PROXY',
+        'RULE-SET,FASTLY_IP,PROXY',
+        'RULE-SET,PARSEC_DOMAIN,PROXY',
+        'RULE-SET,RUSTDESK_DOMAIN,PROXY',
+        'RULE-SET,MAC_APP_UPGRADE_DOMAIN,PROXY',
+        'RULE-SET,EMULE_SERVER_IP,PROXY',
+        'RULE-SET,GLOBAL_DNS_DOMAIN,PROXY',
+        'RULE-SET,GLOBAL_DNS_IP,PROXY',
         'RULE-SET,APPLE_DOMAIN,APPLE',
         'RULE-SET,APPLE_IP,APPLE',
         'RULE-SET,MICROSOFT_APPS_DOMAIN,DIRECT',
+        'RULE-SET,ALIPAN_DOMAIN,DIRECT',
+        'RULE-SET,BAIDU_NETDISK_DOMAIN,DIRECT',
+        'RULE-SET,WEIYUN_DOMAIN,DIRECT',
+        'RULE-SET,WEIYUN_IP,DIRECT',
         'RULE-SET,AQARA_CN_DOMAIN,DIRECT',
         'RULE-SET,AQARA_GLOBAL_DOMAIN,PROXY',
         'RULE-SET,AQARA_GLOBAL_IP,PROXY',
+        'RULE-SET,UNSUPPORT_VPN_DOMAIN,DIRECT',
+        'RULE-SET,BANK_AU_DOMAIN,BANK',
+        'RULE-SET,BANK_CA_DOMAIN,BANK',
+        'RULE-SET,BANK_DE_DOMAIN,BANK',
+        'RULE-SET,BANK_FR_DOMAIN,BANK',
+        'RULE-SET,BANK_HK_DOMAIN,BANK',
+        'RULE-SET,BANK_JP_DOMAIN,BANK',
+        'RULE-SET,BANK_NL_DOMAIN,BANK',
+        'RULE-SET,BANK_SG_DOMAIN,BANK',
+        'RULE-SET,BANK_UK_DOMAIN,BANK',
         'RULE-SET,BANK_US_DOMAIN,BANK',
         'RULE-SET,PAYPAL,FINANCE',
         'RULE-SET,WISE,FINANCE',
+        'RULE-SET,MONZO,FINANCE',
+        'RULE-SET,REVOLUT,FINANCE',
+        'RULE-SET,HOMEIP_JP,PROXY',
+        'RULE-SET,HOMEIP_US,PROXY',
         'RULE-SET,BM_BILIBILI,DIRECT',
         'RULE-SET,BM_TIKTOK,TIKTOK',
         'RULE-SET,FAKE_LOCATION_BILIBILI,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_DOUBAN,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_DOUYIN,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_KUAISHOU,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_TIEBA,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_WEIBO,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_XIGUA,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_XIANYU,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_XIAOHONGSHU,FAKE-LOCATION',
+        'RULE-SET,FAKE_LOCATION_ZHIHU,FAKE-LOCATION',
+        'RULE-SET,GEO_ROUTING_ASIA_CHINA_CCTLD_DOMAIN,DIRECT',
+        'RULE-SET,GEO_ROUTING_ASIA_CHINA_GEOIP,DIRECT',
+        'RULE-SET,GEO_ROUTING_AMERICA_NORTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AMERICA_SOUTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_EUROPE_WEST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_EUROPE_EAST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_OCEANIA_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ANTARCTICA_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_EAST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_EASTSOUTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_SOUTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_CENTRAL_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_WEST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_NORTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_SOUTH_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_WEST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_EAST_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_CENTRAL_CCTLD_DOMAIN,PROXY',
+        'RULE-SET,GEO_ROUTING_AMERICA_NORTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AMERICA_SOUTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_EUROPE_WEST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_EUROPE_EAST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_OCEANIA_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ANTARCTICA_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_EAST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_EASTSOUTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_SOUTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_CENTRAL_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_ASIA_WEST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_NORTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_SOUTH_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_WEST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_EAST_GEOIP,PROXY',
+        'RULE-SET,GEO_ROUTING_AFRICA_CENTRAL_GEOIP,PROXY',
         'RULE-SET,GEOSITE_CN_DOMAIN,DIRECT',
         'RULE-SET,CHINA_DOMAIN,DIRECT',
         'RULE-SET,CHINA_MAX_DOMAIN,DIRECT',
@@ -551,9 +805,13 @@ export function translateRuleLine(line, format) {
 }
 
 // 获取全量分流规则文本/对象
-export function getBuiltinRules(level, format) {
-    const rawRules = RULE_SETS[level.toUpperCase()] || RULE_SETS.STD;
-    return rawRules.map(l => translateRuleLine(l, format)).filter(Boolean);
+export function getBuiltinRules(level, format, options = {}) {
+    const levelKey = level.toUpperCase();
+    const rawRules = RULE_SETS[levelKey] || RULE_SETS.STD;
+    const extraRules = levelKey === 'MATRIX'
+        ? normalizeCustomMatrixRules(options.customMatrixRules, options.customMatrixGroups)
+        : [];
+    return [...extraRules, ...rawRules].map(l => translateRuleLine(l, format)).filter(Boolean);
 }
 
 /**

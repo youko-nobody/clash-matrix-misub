@@ -1,6 +1,7 @@
 import { parseNodeList } from '../utils/node-parser.js';
 import { fetchWithRetry } from '../../services/fetch-utils.js';
 import { buildFetchProxyUrl } from '../../utils/fetch-proxy-utils.js';
+import { buildSubscriptionFetchUserAgents } from './fetch-user-agents.js';
 import {
     filterNodeObjects,
     parseFilterRuleText,
@@ -47,11 +48,48 @@ export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, c
         }
 
         // 使用统一的 Fetch 工具，复用重试逻辑
-        const response = await fetchWithRetry(requestUrl, {
+        let response = await fetchWithRetry(requestUrl, {
             headers: { 'User-Agent': effectiveUserAgent },
             redirect: "follow",
             ...(skipCertVerify ? { cf: { insecureSkipVerify: true } } : {})
         });
+
+        if (!response.ok) {
+            const fallbackUserAgents = buildSubscriptionFetchUserAgents({
+                preferredUserAgent: effectiveUserAgent,
+                sourceUrl: url,
+                baseUserAgent: userAgent || 'v2rayN/7.23'
+            }).filter(ua => ua.toLowerCase() !== String(effectiveUserAgent || '').toLowerCase());
+
+            for (const fallbackUserAgent of fallbackUserAgents) {
+                let fallbackRequestUrl = url;
+
+                if (enableNodeCache) {
+                    try {
+                        const parsedUrl = new URL(fallbackRequestUrl);
+                        parsedUrl.searchParams.set('_t', Date.now().toString());
+                        fallbackRequestUrl = parsedUrl.toString();
+                    } catch (e) {
+                        fallbackRequestUrl += (fallbackRequestUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                    }
+                }
+
+                if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
+                    fallbackRequestUrl = buildFetchProxyUrl(fetchProxy, fallbackRequestUrl, fallbackUserAgent);
+                }
+
+                const fallbackResponse = await fetchWithRetry(fallbackRequestUrl, {
+                    headers: { 'User-Agent': fallbackUserAgent },
+                    redirect: "follow",
+                    ...(skipCertVerify ? { cf: { insecureSkipVerify: true } } : {})
+                });
+
+                if (fallbackResponse.ok) {
+                    response = fallbackResponse;
+                    break;
+                }
+            }
+        }
 
         if (!response.ok) {
             return {
@@ -73,6 +111,54 @@ export async function fetchSubscriptionNodes(url, subscriptionName, userAgent, c
             const fallbackNodes = parseNodeList(fallbackBase64, { plusAsSpace });
             if (fallbackNodes.length > 0) {
                 parsedNodes = fallbackNodes;
+            }
+        }
+
+        if (parsedNodes.length === 0) {
+            const fallbackUserAgents = buildSubscriptionFetchUserAgents({
+                preferredUserAgent: effectiveUserAgent,
+                sourceUrl: url,
+                baseUserAgent: userAgent || 'v2rayN/7.23'
+            }).filter(ua => ua.toLowerCase() !== String(effectiveUserAgent || '').toLowerCase());
+
+            for (const fallbackUserAgent of fallbackUserAgents) {
+                let fallbackRequestUrl = url;
+
+                if (enableNodeCache) {
+                    try {
+                        const parsedUrl = new URL(fallbackRequestUrl);
+                        parsedUrl.searchParams.set('_t', Date.now().toString());
+                        fallbackRequestUrl = parsedUrl.toString();
+                    } catch (e) {
+                        fallbackRequestUrl += (fallbackRequestUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                    }
+                }
+
+                if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
+                    fallbackRequestUrl = buildFetchProxyUrl(fetchProxy, fallbackRequestUrl, fallbackUserAgent);
+                }
+
+                const fallbackResponse = await fetchWithRetry(fallbackRequestUrl, {
+                    headers: { 'User-Agent': fallbackUserAgent },
+                    redirect: "follow",
+                    ...(skipCertVerify ? { cf: { insecureSkipVerify: true } } : {})
+                });
+
+                if (!fallbackResponse.ok) continue;
+
+                const fallbackBuffer = await fallbackResponse.arrayBuffer();
+                const fallbackText = new TextDecoder('utf-8').decode(fallbackBuffer);
+                parsedNodes = parseNodeList(fallbackText, { plusAsSpace });
+
+                if (parsedNodes.length === 0) {
+                    const fallbackBase64 = encodeArrayBufferToBase64(fallbackBuffer);
+                    const fallbackNodes = parseNodeList(fallbackBase64, { plusAsSpace });
+                    if (fallbackNodes.length > 0) {
+                        parsedNodes = fallbackNodes;
+                    }
+                }
+
+                if (parsedNodes.length > 0) break;
             }
         }
 

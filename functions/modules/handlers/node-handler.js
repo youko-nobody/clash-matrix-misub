@@ -9,6 +9,7 @@ import { createJsonResponse, createErrorResponse, JSON_BODY_LIMITS, readJsonWith
 import { parseNodeList } from '../utils/node-parser.js';
 import { getProcessedUserAgent } from '../../utils/format-utils.js';
 import { buildFetchProxyUrl } from '../../utils/fetch-proxy-utils.js';
+import { buildSubscriptionFetchUserAgents } from '../subscription/fetch-user-agents.js';
 
 // 创建用于全局匹配的协议正则表达式
 const NODE_PROTOCOL_GLOBAL_REGEX = new RegExp('^(ss|ssr|vmess|vless|trojan|hysteria2?|hy|hy2|tuic|anytls|socks5|socks):\\/\\/', 'gm');
@@ -82,8 +83,11 @@ export async function handleNodeCountRequest(request, env) {
         let requestUrl = subUrl;
         const requestedUserAgent = typeof customUserAgent === 'string' ? customUserAgent.trim() : '';
         const processedUserAgent = requestedUserAgent || getProcessedUserAgent('v2rayN/7.23', subUrl);
+        const trafficUserAgent = 'clash-verge/v2.4.3';
+        let trafficRequestUrl = subUrl;
         if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
             requestUrl = buildFetchProxyUrl(fetchProxy, subUrl, processedUserAgent);
+            trafficRequestUrl = buildFetchProxyUrl(fetchProxy, subUrl, trafficUserAgent);
         }
 
         try {
@@ -93,13 +97,13 @@ export async function handleNodeCountRequest(request, env) {
                 redirect: "follow"
             };
             const trafficFetchOptions = {
-                headers: { 'User-Agent': 'clash-verge/v2.4.3' },
+                headers: { 'User-Agent': trafficUserAgent },
                 redirect: "follow"
             };
 
             // cf 选项需传给 fetch() 而非 Request()：仅在用户显式启用跳过证书验证时传递
             const cfOptions = await resolveNodeCountFetchCfOptions(env);
-            const trafficRequest = fetch(new Request(requestUrl, trafficFetchOptions), cfOptions);
+            const trafficRequest = fetch(new Request(trafficRequestUrl, trafficFetchOptions), cfOptions);
             const nodeCountRequest = fetch(new Request(requestUrl, fetchOptions), cfOptions);
 
             // 使用 Promise.allSettled 替换 Promise.all
@@ -321,6 +325,123 @@ export async function handleNodeCountRequest(request, env) {
             } else if (responses[1].status === 'fulfilled' && !responses[1].value.ok) {
                 if (!fetchError) fetchError = new Error(`HTTP ${responses[1].value.status}: ${responses[1].value.statusText}`);
                 console.error('Node count request returned error:', responses[1].value.status);
+            }
+
+            const tryUseTextForNodeCount = (response, text, label) => {
+                try {
+                    if (!result.userInfo) {
+                        const info = extractUserInfo(response);
+                        if (info) {
+                            result.userInfo = info;
+                            trafficRequestSucceeded = true;
+                        }
+                    }
+
+                    const bodyError = detectSubscriptionBodyError(text);
+                    if (bodyError) {
+                        fetchError = fetchError || bodyError;
+                        console.warn(`[NodeHandler] ${label} contains upstream error: ${bodyError.message}`);
+                        return false;
+                    }
+
+                    let parsedNodes = parseNodeList(text, { plusAsSpace: Boolean(plusAsSpace) });
+                    let decodedText = text;
+
+                    if (parsedNodes.length === 0) {
+                        try {
+                            const cleanedText = text.replace(/\s/g, '');
+                            let normalized = cleanedText.replace(/-/g, '+').replace(/_/g, '/');
+                            const padding = normalized.length % 4;
+                            if (padding) normalized += '='.repeat(4 - padding);
+                            if (/^[A-Za-z0-9+/=]+$/.test(normalized) && normalized.length >= 20) {
+                                const binaryString = atob(normalized);
+                                const bytes = new Uint8Array(binaryString.length);
+                                for (let i = 0; i < binaryString.length; i++) {
+                                    bytes[i] = binaryString.charCodeAt(i);
+                                }
+                                decodedText = new TextDecoder('utf-8').decode(bytes);
+                                parsedNodes = parseNodeList(decodedText, { plusAsSpace: Boolean(plusAsSpace) });
+                            }
+                        } catch (error) {
+                            console.debug(`[NodeHandler] ${label} base64 fallback failed:`, error);
+                        }
+                    }
+
+                    if (!result.userInfo) {
+                        const bodyInfo = extractUserInfoFromBody(decodedText);
+                        if (bodyInfo) {
+                            result.userInfo = bodyInfo;
+                            trafficRequestSucceeded = true;
+                        }
+                    }
+
+                    if (parsedNodes.length > 0) {
+                        result.count = parsedNodes.length;
+                        nodeCountRequestSucceeded = true;
+                        console.info(`[NodeHandler] Node count recovered by ${label}: ${parsedNodes.length}`);
+                        return true;
+                    }
+
+                    const lineMatches = decodedText.match(NODE_PROTOCOL_GLOBAL_REGEX);
+                    if (lineMatches) {
+                        result.count = lineMatches.length;
+                        nodeCountRequestSucceeded = true;
+                        console.info(`[NodeHandler] Node count recovered by raw protocol scan (${label}): ${lineMatches.length}`);
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn(`[NodeHandler] Failed to parse ${label}:`, error);
+                }
+                return false;
+            };
+
+            // Reuse the Clash-style traffic response before making more upstream requests.
+            if (!nodeCountRequestSucceeded && !fetchError?.status && responses[0].status === 'fulfilled' && responses[0].value.ok) {
+                const trafficResponse = responses[0].value;
+                const trafficBuffer = await trafficResponse.arrayBuffer();
+                const trafficText = new TextDecoder('utf-8').decode(trafficBuffer);
+                tryUseTextForNodeCount(trafficResponse, trafficText, 'traffic response');
+            }
+
+            if (!nodeCountRequestSucceeded && !fetchError?.status) {
+                const fallbackUserAgents = buildSubscriptionFetchUserAgents({
+                    preferredUserAgent: processedUserAgent,
+                    sourceUrl: subUrl,
+                    baseUserAgent: 'v2rayN/7.23'
+                }).filter(ua => {
+                    const normalized = ua.toLowerCase();
+                    return normalized !== processedUserAgent.toLowerCase()
+                        && normalized !== 'clash-verge/v2.4.3';
+                });
+
+                for (const fallbackUserAgent of fallbackUserAgents) {
+                    let fallbackRequestUrl = subUrl;
+                    if (fetchProxy && typeof fetchProxy === 'string' && fetchProxy.trim()) {
+                        fallbackRequestUrl = buildFetchProxyUrl(fetchProxy, subUrl, fallbackUserAgent);
+                    }
+
+                    try {
+                        const fallbackResponse = await fetch(new Request(fallbackRequestUrl, {
+                            headers: { 'User-Agent': fallbackUserAgent },
+                            redirect: "follow"
+                        }), cfOptions);
+
+                        if (!fallbackResponse.ok) {
+                            fetchError = new Error(`HTTP ${fallbackResponse.status}: ${fallbackResponse.statusText}`);
+                            console.warn(`[NodeHandler] UA fallback ${fallbackUserAgent} failed with HTTP ${fallbackResponse.status}.`);
+                            continue;
+                        }
+
+                        const fallbackBuffer = await fallbackResponse.arrayBuffer();
+                        const fallbackText = new TextDecoder('utf-8').decode(fallbackBuffer);
+                        if (tryUseTextForNodeCount(fallbackResponse, fallbackText, `UA fallback ${fallbackUserAgent}`)) {
+                            break;
+                        }
+                    } catch (error) {
+                        fetchError = error;
+                        console.warn(`[NodeHandler] UA fallback ${fallbackUserAgent} failed:`, error);
+                    }
+                }
             }
 
             // 检查是否两个请求都失败了

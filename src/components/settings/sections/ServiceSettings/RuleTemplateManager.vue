@@ -5,7 +5,135 @@ import { useI18n } from '@/i18n/index.js';
 
 const { t } = useI18n();
 
+const props = defineProps({
+  settings: {
+    type: Object,
+    default: null
+  }
+});
+
 const dataStore = useDataStore();
+
+const MATRIX_BASE_TARGETS = [
+  'DIRECT',
+  'REJECT',
+  'PROXY',
+  'Emby代理',
+  'TG',
+  'AI',
+  'YOUTUBE',
+  'TIKTOK',
+  'FINAL',
+  'BLOCK',
+  'APPLE',
+  'BANK',
+  'FINANCE',
+  'FAKE-LOCATION',
+  '♻️ 自动测速'
+];
+
+const RESERVED_GROUPS = new Set([...MATRIX_BASE_TARGETS, 'REJECT-DROP']);
+const matrixRuleTypes = ['DOMAIN-SUFFIX', 'DOMAIN', 'DOMAIN-KEYWORD', 'IP-CIDR', 'IP-CIDR6', 'GEOIP'];
+const matrixGroupTypes = [
+  { value: 'select', label: 'select 手动选择' },
+  { value: 'url-test', label: 'url-test 自动测速' }
+];
+
+const newGroupName = ref('');
+const newGroupType = ref('select');
+const newRuleType = ref('DOMAIN-SUFFIX');
+const newRuleValue = ref('');
+const newRuleTarget = ref('PROXY');
+
+function ensureMatrixSettings() {
+  if (!props.settings) return;
+  if (!Array.isArray(props.settings.customMatrixGroups)) props.settings.customMatrixGroups = [];
+  if (!Array.isArray(props.settings.customMatrixRules)) props.settings.customMatrixRules = [];
+}
+
+const matrixGroups = computed(() => {
+  ensureMatrixSettings();
+  return props.settings?.customMatrixGroups || [];
+});
+
+const matrixRules = computed(() => {
+  ensureMatrixSettings();
+  return props.settings?.customMatrixRules || [];
+});
+
+const matrixTargetOptions = computed(() => {
+  const customTargets = matrixGroups.value.map(group => group.name).filter(Boolean);
+  return [...customTargets, ...MATRIX_BASE_TARGETS];
+});
+
+watch(matrixTargetOptions, (targets) => {
+  if (!targets.includes(newRuleTarget.value)) {
+    newRuleTarget.value = targets[0] || 'PROXY';
+  }
+}, { immediate: true });
+
+function cleanMatrixText(value, maxLength = 120) {
+  return String(value || '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/["'\\]/g, '')
+    .trim()
+    .slice(0, maxLength);
+}
+
+function addMatrixGroup() {
+  ensureMatrixSettings();
+  const name = cleanMatrixText(newGroupName.value, 80);
+  if (!name) {
+    window.alert('请填写策略组名称');
+    return;
+  }
+  if (RESERVED_GROUPS.has(name) || matrixGroups.value.some(group => group.name === name)) {
+    window.alert('名称与系统默认策略组冲突或已经存在');
+    return;
+  }
+
+  props.settings.customMatrixGroups.push({
+    name,
+    type: newGroupType.value === 'url-test' ? 'url-test' : 'select'
+  });
+  newGroupName.value = '';
+}
+
+function removeMatrixGroup(index) {
+  ensureMatrixSettings();
+  const deleted = props.settings.customMatrixGroups.splice(index, 1)[0];
+  if (deleted?.name) {
+    props.settings.customMatrixRules = props.settings.customMatrixRules.filter(rule => rule.target !== deleted.name);
+  }
+}
+
+function addMatrixRule() {
+  ensureMatrixSettings();
+  const value = cleanMatrixText(newRuleValue.value, 180).replace(/,/g, '');
+  if (!value) {
+    window.alert('请输入目标域名、CIDR 或关键词');
+    return;
+  }
+  props.settings.customMatrixRules.unshift({
+    type: newRuleType.value,
+    value,
+    target: newRuleTarget.value
+  });
+  newRuleValue.value = '';
+}
+
+function removeMatrixRule(index) {
+  ensureMatrixSettings();
+  props.settings.customMatrixRules.splice(index, 1);
+}
+
+function moveMatrixRule(index, direction) {
+  ensureMatrixSettings();
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= props.settings.customMatrixRules.length) return;
+  const [item] = props.settings.customMatrixRules.splice(index, 1);
+  props.settings.customMatrixRules.splice(nextIndex, 0, item);
+}
 
 const DEFAULT_RULE_TEMPLATE_CONTENT = `[custom]
 ruleset=🎯 全球直连,[]GEOIP,CN
@@ -114,6 +242,86 @@ async function saveTemplates() {
 </script>
 
 <template>
+  <div v-if="settings" class="rounded-xl border border-cyan-100/80 bg-white/90 p-6 shadow-xs dark:border-cyan-900/30 dark:bg-gray-900/70">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Matrix 可视化自定义规则</h3>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          按 V5.5 的方式添加策略组和域名规则；保存设置后会注入到 Matrix 内置规则最前面。
+        </p>
+      </div>
+      <div class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-[11px] font-semibold text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-900/20 dark:text-cyan-200">
+        规则来源：Clash Matrix Studio V5.5
+      </div>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 gap-5">
+      <div class="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
+        <div class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">新建策略组</div>
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(260px,1fr)_220px_auto] lg:items-end">
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold text-gray-500">策略组名称</span>
+            <input v-model="newGroupName" class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="例如：我的流媒体" />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold text-gray-500">类型</span>
+            <select v-model="newGroupType" class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+              <option v-for="type in matrixGroupTypes" :key="type.value" :value="type.value">{{ type.label }}</option>
+            </select>
+          </label>
+          <button type="button" @click="addMatrixGroup" class="whitespace-nowrap rounded-lg bg-cyan-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-cyan-700">
+            创建策略组
+          </button>
+        </div>
+
+        <div class="mt-4 max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-950">
+          <p v-if="matrixGroups.length === 0" class="px-2 py-3 text-center text-xs text-gray-400">暂无额外可视化策略组</p>
+          <div v-for="(group, index) in matrixGroups" :key="`${group.name}-${index}`" class="flex items-center justify-between gap-2 rounded-md border border-gray-100 bg-gray-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-white/5">
+            <span class="truncate text-gray-700 dark:text-gray-200"><b class="text-cyan-700 dark:text-cyan-300">{{ group.name }}</b> ({{ group.type }})</span>
+            <button type="button" @click="removeMatrixGroup(index)" class="rounded-md border border-red-200 px-2 py-1 font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20">删除</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
+        <div class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">写入域名规则</div>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[180px_minmax(320px,1fr)_220px_auto] xl:items-end">
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold text-gray-500">匹配类型</span>
+            <select v-model="newRuleType" class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+              <option v-for="type in matrixRuleTypes" :key="type" :value="type">{{ type }}</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold text-gray-500">目标域名 / CIDR / 关键词</span>
+            <input v-model="newRuleValue" class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="例如：emby.media" />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold text-gray-500">路由去向</span>
+            <select v-model="newRuleTarget" class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+              <option v-for="target in matrixTargetOptions" :key="target" :value="target">{{ target }}</option>
+            </select>
+          </label>
+          <button type="button" @click="addMatrixRule" class="whitespace-nowrap rounded-lg bg-cyan-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-cyan-700 md:col-span-2 xl:col-span-1">
+            写入规则
+          </button>
+        </div>
+
+        <div class="mt-4 max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-950">
+          <p v-if="matrixRules.length === 0" class="px-2 py-3 text-center text-xs text-gray-400">暂无可视化域名分流规则</p>
+          <div v-for="(rule, index) in matrixRules" :key="`${rule.type}-${rule.value}-${index}`" class="flex items-center gap-2 rounded-md border border-gray-100 bg-gray-50 px-3 py-2 text-xs dark:border-white/10 dark:bg-white/5">
+            <span class="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-200">
+              - {{ rule.type }},{{ rule.value }},<b class="text-cyan-700 dark:text-cyan-300">{{ rule.target }}</b>
+            </span>
+            <button type="button" @click="moveMatrixRule(index, -1)" :disabled="index === 0" class="rounded-md border border-gray-200 px-2 py-1 font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:border-gray-700 dark:hover:bg-white/10">上移</button>
+            <button type="button" @click="moveMatrixRule(index, 1)" :disabled="index === matrixRules.length - 1" class="rounded-md border border-gray-200 px-2 py-1 font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 dark:border-gray-700 dark:hover:bg-white/10">下移</button>
+            <button type="button" @click="removeMatrixRule(index)" class="rounded-md border border-red-200 px-2 py-1 font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="rounded-xl border border-emerald-100/80 bg-white/90 p-6 shadow-xs dark:border-emerald-900/30 dark:bg-gray-900/70">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>

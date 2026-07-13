@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 import TransformSelector from '@/components/forms/TransformSelector.vue';
 import Switch from '@/components/ui/Switch.vue';
 import SectionHeader from '../../SectionHeader.vue';
-import RuleTemplateManager from './RuleTemplateManager.vue';
 import { DEFAULT_SUBCONVERTER_BACKEND, SUBCONVERTER_BACKENDS } from '@/constants/subconverter-backends.js';
 import { testSubconverterBackend } from '@/lib/api.js';
 import { useI18n } from '@/i18n/index.js';
@@ -323,6 +322,5 @@ watch(isExternalEngine, (enabled) => {
         </div>
       </div>
     </div>
-    <RuleTemplateManager />
   </div>
 </template>

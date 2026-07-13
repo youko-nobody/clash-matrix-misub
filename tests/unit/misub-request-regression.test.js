@@ -250,7 +250,7 @@ describe('handleMisubRequest regression coverage', () => {
         }
     });
 
-    it('returns current fetch traffic header on the first builtin response', async () => {
+    it('hides traffic header by default and allows explicit userinfo opt-in', async () => {
         const subscriptions = [{
             id: 'sub-a',
             name: 'Airport A',
@@ -285,10 +285,21 @@ describe('handleMisubRequest regression coverage', () => {
 
             expect(response.status).toBe(200);
             expect(text).toContain('proxies:');
-            expect(response.headers.get('Subscription-Userinfo')).toBe('upload=10; download=20; total=1000; expire=2000');
+            expect(response.headers.get('Subscription-Userinfo')).toBeNull();
             expect(waitUntilPromises.length).toBeGreaterThan(0);
             expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('[MiSub Request]'));
             expect(logSpy).toHaveBeenCalledWith('[MiSub Nodes] Count/Length: 51');
+
+            const optInResponse = await handleMisubRequest({
+                request: new Request('https://misub.example/stable-token?target=clash&refresh=1&builtin=true&userinfo=1', {
+                    headers: { 'User-Agent': 'ClashMeta' }
+                }),
+                env: {},
+                waitUntil: promise => waitUntilPromises.push(promise)
+            });
+
+            expect(optInResponse.status).toBe(200);
+            expect(optInResponse.headers.get('Subscription-Userinfo')).toBe('upload=10; download=20; total=1000; expire=2000');
         } finally {
             logSpy.mockRestore();
         }
