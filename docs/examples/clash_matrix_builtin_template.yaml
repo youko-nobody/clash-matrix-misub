@@ -1,0 +1,882 @@
+# Clash Matrix Studio - Matrix built-in template
+#
+# Public, redacted copy of the current default Matrix template.
+# No real proxy nodes, subscription URLs, share tokens, UUIDs, passwords, keys, or dashboard custom rules are included.
+mixed-port: 7890
+allow-lan: false
+bind-address: "*"
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  default-nameserver:
+    - 223.5.5.5
+    - 1.1.1.1
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - localhost.ptlogin2.qq.com
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  proxy-server-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+proxies: []
+profile:
+  store-selected: true
+  store-fake-ip: true
+  subscription-url: ""
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - ♻️ 自动测速
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png
+  - name: Emby代理
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Emby.png
+  - name: TG
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png
+  - name: AI
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
+  - name: YOUTUBE
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png
+  - name: TIKTOK
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png
+  - name: FINAL
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png
+  - name: BLOCK
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Reject.png
+  - name: APPLE
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png
+  - name: BANK
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/PayPal.png
+  - name: FINANCE
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/PayPal.png
+  - name: FAKE-LOCATION
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Rainbow.png
+  - name: ♻️ 自动测速
+    type: url-test
+    proxies:
+      - DIRECT
+    url: http://www.google.com/blank.html
+    interval: 300
+    tolerance: 50
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Speedtest.png
+rule-providers:
+  PRE_REPAIR_EASY_PRIVACY_DIRECT:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/PreRepairEasyPrivacy/PreRepairEasyPrivacy_DIRECT.yaml
+    path: ./ruleset/PRE_REPAIR_EASY_PRIVACY_DIRECT.yaml
+    interval: 86400
+  PRE_REPAIR_EASY_PRIVACY_PROXY:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/PreRepairEasyPrivacy/PreRepairEasyPrivacy_PROXY.yaml
+    path: ./ruleset/PRE_REPAIR_EASY_PRIVACY_PROXY.yaml
+    interval: 86400
+  PRE_REPAIR_EASY_PRIVACY_REJECT:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/PreRepairEasyPrivacy/PreRepairEasyPrivacy_REJECT.yaml
+    path: ./ruleset/PRE_REPAIR_EASY_PRIVACY_REJECT.yaml
+    interval: 86400
+  BM_ADVERTISING_LITE:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml
+    path: ./ruleset/BM_ADVERTISING_LITE.yaml
+    interval: 86400
+  BM_EASYPRIVACY:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/EasyPrivacy/EasyPrivacy.yaml
+    path: ./ruleset/BM_EASYPRIVACY.yaml
+    interval: 86400
+  BLOCK_HTTP_DNS_PLUS:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/BlockHttpDNSPlus/BlockHttpDNSPlus.yaml
+    path: ./ruleset/BLOCK_HTTP_DNS_PLUS.yaml
+    interval: 86400
+  CHINA_DNS_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/ChinaDNS/ChinaDNS_Domain.yaml
+    path: ./ruleset/CHINA_DNS_DOMAIN.yaml
+    interval: 86400
+  CHINA_DNS_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/ChinaDNS/ChinaDNS_IP.yaml
+    path: ./ruleset/CHINA_DNS_IP.yaml
+    interval: 86400
+  HIJACKING_PLUS:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/HijackingPlus/HijackingPlus.yaml
+    path: ./ruleset/HIJACKING_PLUS.yaml
+    interval: 86400
+  GEMINI_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Gemini/Gemini_Domain.yaml
+    path: ./ruleset/GEMINI_DOMAIN.yaml
+    interval: 86400
+  GROK_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Grok/Grok_Domain.yaml
+    path: ./ruleset/GROK_DOMAIN.yaml
+    interval: 86400
+  COPILOT_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Copilot/Copilot_Domain.yaml
+    path: ./ruleset/COPILOT_DOMAIN.yaml
+    interval: 86400
+  APPLE_AI_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/AppleAI/AppleAI_Domain.yaml
+    path: ./ruleset/APPLE_AI_DOMAIN.yaml
+    interval: 86400
+  BM_OPENAI:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml
+    path: ./ruleset/BM_OPENAI.yaml
+    interval: 86400
+  BM_CLAUDE:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.yaml
+    path: ./ruleset/BM_CLAUDE.yaml
+    interval: 86400
+  BM_TELEGRAM:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.yaml
+    path: ./ruleset/BM_TELEGRAM.yaml
+    interval: 86400
+  BM_YOUTUBE:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml
+    path: ./ruleset/BM_YOUTUBE.yaml
+    interval: 86400
+  APPLE_NEWS_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/AppleNews/AppleNews_Domain.yaml
+    path: ./ruleset/APPLE_NEWS_DOMAIN.yaml
+    interval: 86400
+  SIGNAL_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Signal/Signal_Domain.yaml
+    path: ./ruleset/SIGNAL_DOMAIN.yaml
+    interval: 86400
+  KWAI_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Kwai/Kwai_Domain.yaml
+    path: ./ruleset/KWAI_DOMAIN.yaml
+    interval: 86400
+  PORNHUB_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Pornhub/Pornhub_Domain.yaml
+    path: ./ruleset/PORNHUB_DOMAIN.yaml
+    interval: 86400
+  WAYBACK_MACHINE_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/WaybackMachine/WaybackMachine_Domain.yaml
+    path: ./ruleset/WAYBACK_MACHINE_DOMAIN.yaml
+    interval: 86400
+  WAYBACK_MACHINE_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/WaybackMachine/WaybackMachine_IP.yaml
+    path: ./ruleset/WAYBACK_MACHINE_IP.yaml
+    interval: 86400
+  FASTLY_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Fastly/Fastly_IP.yaml
+    path: ./ruleset/FASTLY_IP.yaml
+    interval: 86400
+  PARSEC_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Parsec/Parsec_Domain.yaml
+    path: ./ruleset/PARSEC_DOMAIN.yaml
+    interval: 86400
+  RUSTDESK_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/RustDesk/RustDesk_Domain.yaml
+    path: ./ruleset/RUSTDESK_DOMAIN.yaml
+    interval: 86400
+  MAC_APP_UPGRADE_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/MacAppUpgrade/MacAppUpgrade_Domain.yaml
+    path: ./ruleset/MAC_APP_UPGRADE_DOMAIN.yaml
+    interval: 86400
+  EMULE_SERVER_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/eMuleServer/eMuleServer_IP.yaml
+    path: ./ruleset/EMULE_SERVER_IP.yaml
+    interval: 86400
+  GLOBAL_DNS_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GlobalDNS/GlobalDNS_Domain.yaml
+    path: ./ruleset/GLOBAL_DNS_DOMAIN.yaml
+    interval: 86400
+  GLOBAL_DNS_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GlobalDNS/GlobalDNS_IP.yaml
+    path: ./ruleset/GLOBAL_DNS_IP.yaml
+    interval: 86400
+  APPLE_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Apple/Apple_Domain.yaml
+    path: ./ruleset/APPLE_DOMAIN.yaml
+    interval: 86400
+  APPLE_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Apple/Apple_IP.yaml
+    path: ./ruleset/APPLE_IP.yaml
+    interval: 86400
+  MICROSOFT_APPS_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/MicrosoftAPPs/MicrosoftAPPs_Domain.yaml
+    path: ./ruleset/MICROSOFT_APPS_DOMAIN.yaml
+    interval: 86400
+  ALIPAN_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Alipan/Alipan_Domain.yaml
+    path: ./ruleset/ALIPAN_DOMAIN.yaml
+    interval: 86400
+  BAIDU_NETDISK_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/BaiduNetDisk/BaiduNetDisk_Domain.yaml
+    path: ./ruleset/BAIDU_NETDISK_DOMAIN.yaml
+    interval: 86400
+  WEIYUN_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/WeiYun/WeiYun_Domain.yaml
+    path: ./ruleset/WEIYUN_DOMAIN.yaml
+    interval: 86400
+  WEIYUN_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/WeiYun/WeiYun_IP.yaml
+    path: ./ruleset/WEIYUN_IP.yaml
+    interval: 86400
+  AQARA_CN_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Aqara/AqaraCN._Domain.yaml
+    path: ./ruleset/AQARA_CN_DOMAIN.yaml
+    interval: 86400
+  AQARA_GLOBAL_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Aqara/AqaraGlobal._Domain.yaml
+    path: ./ruleset/AQARA_GLOBAL_DOMAIN.yaml
+    interval: 86400
+  AQARA_GLOBAL_IP:
+    type: http
+    behavior: ipcidr
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Aqara/AqaraGlobal._IP.yaml
+    path: ./ruleset/AQARA_GLOBAL_IP.yaml
+    interval: 86400
+  UNSUPPORT_VPN_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/UnsupportVPN/UnsupportVPN_Domain.yaml
+    path: ./ruleset/UNSUPPORT_VPN_DOMAIN.yaml
+    interval: 86400
+  BANK_AU_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankAU_Domain.yaml
+    path: ./ruleset/BANK_AU_DOMAIN.yaml
+    interval: 86400
+  BANK_CA_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankCA_Domain.yaml
+    path: ./ruleset/BANK_CA_DOMAIN.yaml
+    interval: 86400
+  BANK_DE_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankDE_Domain.yaml
+    path: ./ruleset/BANK_DE_DOMAIN.yaml
+    interval: 86400
+  BANK_FR_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankFR_Domain.yaml
+    path: ./ruleset/BANK_FR_DOMAIN.yaml
+    interval: 86400
+  BANK_HK_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankHK_Domain.yaml
+    path: ./ruleset/BANK_HK_DOMAIN.yaml
+    interval: 86400
+  BANK_JP_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankJP_Domain.yaml
+    path: ./ruleset/BANK_JP_DOMAIN.yaml
+    interval: 86400
+  BANK_NL_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankNL_Domain.yaml
+    path: ./ruleset/BANK_NL_DOMAIN.yaml
+    interval: 86400
+  BANK_SG_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankSG_Domain.yaml
+    path: ./ruleset/BANK_SG_DOMAIN.yaml
+    interval: 86400
+  BANK_UK_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankUK_Domain.yaml
+    path: ./ruleset/BANK_UK_DOMAIN.yaml
+    interval: 86400
+  BANK_US_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/Bank/BankUS_Domain.yaml
+    path: ./ruleset/BANK_US_DOMAIN.yaml
+    interval: 86400
+  PAYPAL:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/VirtualFinance/Paypal.yaml
+    path: ./ruleset/PAYPAL.yaml
+    interval: 86400
+  WISE:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/VirtualFinance/Wise.yaml
+    path: ./ruleset/WISE.yaml
+    interval: 86400
+  MONZO:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/VirtualFinance/Monzo.yaml
+    path: ./ruleset/MONZO.yaml
+    interval: 86400
+  REVOLUT:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/VirtualFinance/Revolut.yaml
+    path: ./ruleset/REVOLUT.yaml
+    interval: 86400
+  HOMEIP_JP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/HomeIP/HomeIPJP.yaml
+    path: ./ruleset/HOMEIP_JP.yaml
+    interval: 86400
+  HOMEIP_US:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/HomeIP/HomeIPUS.yaml
+    path: ./ruleset/HOMEIP_US.yaml
+    interval: 86400
+  BM_BILIBILI:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BiliBili/BiliBili.yaml
+    path: ./ruleset/BM_BILIBILI.yaml
+    interval: 86400
+  BM_XIAOHONGSHU:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/XiaoHongShu/XiaoHongShu.yaml
+    path: ./ruleset/BM_XIAOHONGSHU.yaml
+    interval: 86400
+  BM_TIKTOK:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TikTok/TikTok.yaml
+    path: ./ruleset/BM_TIKTOK.yaml
+    interval: 86400
+  FAKE_LOCATION_BILIBILI:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationBiliBili.yaml
+    path: ./ruleset/FAKE_LOCATION_BILIBILI.yaml
+    interval: 86400
+  FAKE_LOCATION_DOUBAN:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationDouBan.yaml
+    path: ./ruleset/FAKE_LOCATION_DOUBAN.yaml
+    interval: 86400
+  FAKE_LOCATION_DOUYIN:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationDouYin.yaml
+    path: ./ruleset/FAKE_LOCATION_DOUYIN.yaml
+    interval: 86400
+  FAKE_LOCATION_KUAISHOU:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationKuaiShou.yaml
+    path: ./ruleset/FAKE_LOCATION_KUAISHOU.yaml
+    interval: 86400
+  FAKE_LOCATION_TIEBA:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationTieBa.yaml
+    path: ./ruleset/FAKE_LOCATION_TIEBA.yaml
+    interval: 86400
+  FAKE_LOCATION_WEIBO:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationWeiBo.yaml
+    path: ./ruleset/FAKE_LOCATION_WEIBO.yaml
+    interval: 86400
+  FAKE_LOCATION_XIGUA:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationXiGua.yaml
+    path: ./ruleset/FAKE_LOCATION_XIGUA.yaml
+    interval: 86400
+  FAKE_LOCATION_XIANYU:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationXianYu.yaml
+    path: ./ruleset/FAKE_LOCATION_XIANYU.yaml
+    interval: 86400
+  FAKE_LOCATION_XIAOHONGSHU:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationXiaoHongShu.yaml
+    path: ./ruleset/FAKE_LOCATION_XIAOHONGSHU.yaml
+    interval: 86400
+  FAKE_LOCATION_ZHIHU:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/FakeLocation/FakeLocationZhiHu.yaml
+    path: ./ruleset/FAKE_LOCATION_ZHIHU.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_CHINA_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_China_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_CHINA_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_CHINA_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_China_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_CHINA_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AMERICA_NORTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_America_North_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AMERICA_NORTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AMERICA_SOUTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_America_South_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AMERICA_SOUTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_EUROPE_WEST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Europe_West_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_EUROPE_WEST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_EUROPE_EAST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Europe_East_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_EUROPE_EAST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_OCEANIA_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Oceania_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_OCEANIA_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ANTARCTICA_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Antarctica_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ANTARCTICA_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_EAST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_East_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_EAST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_EASTSOUTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_EastSouth_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_EASTSOUTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_SOUTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_South_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_SOUTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_CENTRAL_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_Central_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_CENTRAL_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_WEST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Asia_West_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_WEST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_NORTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Africa_North_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_NORTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_SOUTH_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Africa_South_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_SOUTH_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_WEST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Africa_West_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_WEST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_EAST_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Africa_East_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_EAST_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_CENTRAL_CCTLD_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_Domain/GeoRouting_Africa_Central_ccTLD_Domain.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_CENTRAL_CCTLD_DOMAIN.yaml
+    interval: 86400
+  GEO_ROUTING_AMERICA_NORTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_America_North_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AMERICA_NORTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AMERICA_SOUTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_America_South_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AMERICA_SOUTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_EUROPE_WEST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Europe_West_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_EUROPE_WEST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_EUROPE_EAST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Europe_East_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_EUROPE_EAST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_OCEANIA_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Oceania_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_OCEANIA_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ANTARCTICA_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Antarctica_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ANTARCTICA_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_EAST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_East_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_EAST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_EASTSOUTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_EastSouth_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_EASTSOUTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_SOUTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_South_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_SOUTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_CENTRAL_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_Central_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_CENTRAL_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_ASIA_WEST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Asia_West_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_ASIA_WEST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_NORTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Africa_North_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_NORTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_SOUTH_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Africa_South_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_SOUTH_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_WEST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Africa_West_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_WEST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_EAST_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Africa_East_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_EAST_GEOIP.yaml
+    interval: 86400
+  GEO_ROUTING_AFRICA_CENTRAL_GEOIP:
+    type: http
+    behavior: classical
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeoRouting_For_IP/GeoRouting_Africa_Central_GeoIP.yaml
+    path: ./ruleset/GEO_ROUTING_AFRICA_CENTRAL_GEOIP.yaml
+    interval: 86400
+  GEOSITE_CN_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/GeositeCN/GeositeCN_Domain.yaml
+    path: ./ruleset/GEOSITE_CN_DOMAIN.yaml
+    interval: 86400
+  CHINA_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/China/China_Domain.yaml
+    path: ./ruleset/CHINA_DOMAIN.yaml
+    interval: 86400
+  CHINA_MAX_DOMAIN:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/Accademia/Additional_Rule_For_Clash/main/ChinaMax/ChinaMax_Domain.yaml
+    path: ./ruleset/CHINA_MAX_DOMAIN.yaml
+    interval: 86400
+rules:
+  - DOMAIN,localhost,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
+  - RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT
+  - RULE-SET,PRE_REPAIR_EASY_PRIVACY_PROXY,PROXY
+  - RULE-SET,PRE_REPAIR_EASY_PRIVACY_REJECT,BLOCK
+  - RULE-SET,BM_ADVERTISING_LITE,BLOCK
+  - RULE-SET,BM_EASYPRIVACY,BLOCK
+  - RULE-SET,BLOCK_HTTP_DNS_PLUS,BLOCK
+  - RULE-SET,CHINA_DNS_DOMAIN,BLOCK
+  - RULE-SET,CHINA_DNS_IP,BLOCK
+  - RULE-SET,HIJACKING_PLUS,BLOCK
+  - RULE-SET,GEMINI_DOMAIN,AI
+  - RULE-SET,GROK_DOMAIN,AI
+  - RULE-SET,COPILOT_DOMAIN,AI
+  - RULE-SET,APPLE_AI_DOMAIN,AI
+  - RULE-SET,BM_OPENAI,AI
+  - RULE-SET,BM_CLAUDE,AI
+  - RULE-SET,BM_TELEGRAM,TG
+  - RULE-SET,BM_YOUTUBE,YOUTUBE
+  - RULE-SET,APPLE_NEWS_DOMAIN,PROXY
+  - RULE-SET,SIGNAL_DOMAIN,PROXY
+  - RULE-SET,KWAI_DOMAIN,PROXY
+  - RULE-SET,PORNHUB_DOMAIN,PROXY
+  - RULE-SET,WAYBACK_MACHINE_DOMAIN,PROXY
+  - RULE-SET,WAYBACK_MACHINE_IP,PROXY
+  - RULE-SET,FASTLY_IP,PROXY
+  - RULE-SET,PARSEC_DOMAIN,PROXY
+  - RULE-SET,RUSTDESK_DOMAIN,PROXY
+  - RULE-SET,MAC_APP_UPGRADE_DOMAIN,PROXY
+  - RULE-SET,EMULE_SERVER_IP,PROXY
+  - RULE-SET,GLOBAL_DNS_DOMAIN,PROXY
+  - RULE-SET,GLOBAL_DNS_IP,PROXY
+  - RULE-SET,APPLE_DOMAIN,APPLE
+  - RULE-SET,APPLE_IP,APPLE
+  - RULE-SET,MICROSOFT_APPS_DOMAIN,DIRECT
+  - RULE-SET,ALIPAN_DOMAIN,DIRECT
+  - RULE-SET,BAIDU_NETDISK_DOMAIN,DIRECT
+  - RULE-SET,WEIYUN_DOMAIN,DIRECT
+  - RULE-SET,WEIYUN_IP,DIRECT
+  - RULE-SET,AQARA_CN_DOMAIN,DIRECT
+  - RULE-SET,AQARA_GLOBAL_DOMAIN,PROXY
+  - RULE-SET,AQARA_GLOBAL_IP,PROXY
+  - RULE-SET,UNSUPPORT_VPN_DOMAIN,DIRECT
+  - RULE-SET,BANK_AU_DOMAIN,BANK
+  - RULE-SET,BANK_CA_DOMAIN,BANK
+  - RULE-SET,BANK_DE_DOMAIN,BANK
+  - RULE-SET,BANK_FR_DOMAIN,BANK
+  - RULE-SET,BANK_HK_DOMAIN,BANK
+  - RULE-SET,BANK_JP_DOMAIN,BANK
+  - RULE-SET,BANK_NL_DOMAIN,BANK
+  - RULE-SET,BANK_SG_DOMAIN,BANK
+  - RULE-SET,BANK_UK_DOMAIN,BANK
+  - RULE-SET,BANK_US_DOMAIN,BANK
+  - RULE-SET,PAYPAL,FINANCE
+  - RULE-SET,WISE,FINANCE
+  - RULE-SET,MONZO,FINANCE
+  - RULE-SET,REVOLUT,FINANCE
+  - RULE-SET,HOMEIP_JP,PROXY
+  - RULE-SET,HOMEIP_US,PROXY
+  - RULE-SET,BM_BILIBILI,DIRECT
+  - RULE-SET,BM_XIAOHONGSHU,DIRECT
+  - RULE-SET,BM_TIKTOK,TIKTOK
+  - RULE-SET,FAKE_LOCATION_BILIBILI,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_DOUBAN,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_DOUYIN,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_KUAISHOU,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_TIEBA,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_WEIBO,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_XIGUA,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_XIANYU,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_XIAOHONGSHU,FAKE-LOCATION
+  - RULE-SET,FAKE_LOCATION_ZHIHU,FAKE-LOCATION
+  - RULE-SET,GEO_ROUTING_ASIA_CHINA_CCTLD_DOMAIN,DIRECT
+  - RULE-SET,GEO_ROUTING_ASIA_CHINA_GEOIP,DIRECT
+  - RULE-SET,GEO_ROUTING_AMERICA_NORTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AMERICA_SOUTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_EUROPE_WEST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_EUROPE_EAST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_OCEANIA_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ANTARCTICA_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_EAST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_EASTSOUTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_SOUTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_CENTRAL_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_WEST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_NORTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_SOUTH_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_WEST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_EAST_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_CENTRAL_CCTLD_DOMAIN,PROXY
+  - RULE-SET,GEO_ROUTING_AMERICA_NORTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AMERICA_SOUTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_EUROPE_WEST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_EUROPE_EAST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_OCEANIA_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ANTARCTICA_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_EAST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_EASTSOUTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_SOUTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_CENTRAL_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_ASIA_WEST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_NORTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_SOUTH_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_WEST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_EAST_GEOIP,PROXY
+  - RULE-SET,GEO_ROUTING_AFRICA_CENTRAL_GEOIP,PROXY
+  - RULE-SET,GEOSITE_CN_DOMAIN,DIRECT
+  - RULE-SET,CHINA_DOMAIN,DIRECT
+  - RULE-SET,CHINA_MAX_DOMAIN,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,FINAL
