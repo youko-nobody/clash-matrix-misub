@@ -14,6 +14,9 @@ describe('Matrix V5.5 rules', () => {
 
         expect(groups.get('MY-MEDIA')).toBeTruthy();
         expect(parsed.rules[0]).toBe('DOMAIN-SUFFIX,emby.media,MY-MEDIA');
+        expect(parsed.rules[1]).toBe('DOMAIN,localhost,DIRECT');
+        expect(parsed.rules[2]).toBe('DOMAIN-SUFFIX,local,DIRECT');
+        expect(parsed.rules).toContain('IP-CIDR,192.168.0.0/16,DIRECT,no-resolve');
         expect(parsed.rules).toContain('RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT');
         expect(parsed.rules).toContain('RULE-SET,BM_ADVERTISING_LITE,BLOCK');
         expect(parsed.rules).toContain('RULE-SET,BM_EASYPRIVACY,BLOCK');
@@ -32,6 +35,10 @@ describe('Matrix V5.5 rules', () => {
             ruleLevel: 'matrix'
         }));
 
+        expect(parsed.rules[0]).toBe('DOMAIN,localhost,DIRECT');
+        expect(parsed.rules[1]).toBe('DOMAIN-SUFFIX,local,DIRECT');
+        expect(parsed.rules).toContain('IP-CIDR,10.0.0.0/8,DIRECT,no-resolve');
+        expect(parsed.rules).toContain('IP-CIDR6,fc00::/7,DIRECT,no-resolve');
         expect(parsed.rules).not.toContain('RULE-SET,ANTI_AD,BLOCK');
         expect(parsed.rules).not.toContain('RULE-SET,REIJI_ADBLOCK,BLOCK');
         expect(parsed['rule-providers']).not.toHaveProperty('ANTI_AD');

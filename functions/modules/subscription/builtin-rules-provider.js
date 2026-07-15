@@ -605,6 +605,20 @@ export const REMOTE_SOURCES = {
 /**
  * 分流规则集 (通过 RULE-SET 引用远程源)
  */
+export const MATRIX_LAN_DIRECT_RULES = [
+    'DOMAIN,localhost,DIRECT',
+    'DOMAIN-SUFFIX,local,DIRECT',
+    'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve',
+    'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve',
+    'IP-CIDR,100.64.0.0/10,DIRECT,no-resolve',
+    'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve',
+    'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve',
+    'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve',
+    'IP-CIDR6,::1/128,DIRECT,no-resolve',
+    'IP-CIDR6,fc00::/7,DIRECT,no-resolve',
+    'IP-CIDR6,fe80::/10,DIRECT,no-resolve'
+];
+
 export const RULE_SETS = {
     BASE: [
         `DOMAIN-SUFFIX,google.com,${DEFAULT_SELECT_GROUP}`,
@@ -648,6 +662,7 @@ export const RULE_SETS = {
         `MATCH,${DEFAULT_RELAY_GROUP}`
     ],
     MATRIX: [
+        ...MATRIX_LAN_DIRECT_RULES,
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT',
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_PROXY,PROXY',
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_REJECT,BLOCK',
