@@ -393,9 +393,19 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.yaml',
         behavior: 'classical'
     },
+    BM_ADVERTISING_LITE: {
+        name: 'AdvertisingLite',
+        clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml',
+        behavior: 'classical'
+    },
     BM_BILIBILI: {
         name: 'BiliBili',
         clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BiliBili/BiliBili.yaml',
+        behavior: 'classical'
+    },
+    BM_XIAOHONGSHU: {
+        name: 'XiaoHongShu',
+        clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/XiaoHongShu/XiaoHongShu.yaml',
         behavior: 'classical'
     },
     BM_TIKTOK: {
@@ -636,6 +646,7 @@ export const RULE_SETS = {
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT',
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_PROXY,PROXY',
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_REJECT,BLOCK',
+        'RULE-SET,BM_ADVERTISING_LITE,BLOCK',
         'RULE-SET,BLOCK_HTTP_DNS_PLUS,BLOCK',
         'RULE-SET,CHINA_DNS_DOMAIN,BLOCK',
         'RULE-SET,CHINA_DNS_IP,BLOCK',
@@ -689,6 +700,7 @@ export const RULE_SETS = {
         'RULE-SET,HOMEIP_JP,PROXY',
         'RULE-SET,HOMEIP_US,PROXY',
         'RULE-SET,BM_BILIBILI,DIRECT',
+        'RULE-SET,BM_XIAOHONGSHU,DIRECT',
         'RULE-SET,BM_TIKTOK,TIKTOK',
         'RULE-SET,FAKE_LOCATION_BILIBILI,FAKE-LOCATION',
         'RULE-SET,FAKE_LOCATION_DOUBAN,FAKE-LOCATION',

@@ -15,8 +15,12 @@ describe('Matrix V5.5 rules', () => {
         expect(groups.get('MY-MEDIA')).toBeTruthy();
         expect(parsed.rules[0]).toBe('DOMAIN-SUFFIX,emby.media,MY-MEDIA');
         expect(parsed.rules).toContain('RULE-SET,PRE_REPAIR_EASY_PRIVACY_DIRECT,DIRECT');
+        expect(parsed.rules).toContain('RULE-SET,BM_ADVERTISING_LITE,BLOCK');
+        expect(parsed.rules).toContain('RULE-SET,BM_XIAOHONGSHU,DIRECT');
         expect(parsed.rules).toContain('RULE-SET,GEO_ROUTING_AFRICA_CENTRAL_GEOIP,PROXY');
         expect(parsed['rule-providers']).toHaveProperty('BANK_AU_DOMAIN');
+        expect(parsed['rule-providers']).toHaveProperty('BM_ADVERTISING_LITE');
+        expect(parsed['rule-providers']).toHaveProperty('BM_XIAOHONGSHU');
         expect(parsed['rule-providers']).toHaveProperty('GEO_ROUTING_AFRICA_CENTRAL_GEOIP');
     });
 
@@ -30,6 +34,7 @@ describe('Matrix V5.5 rules', () => {
         expect(parsed.rules).not.toContain('RULE-SET,REIJI_ADBLOCK,BLOCK');
         expect(parsed['rule-providers']).not.toHaveProperty('ANTI_AD');
         expect(parsed['rule-providers']).not.toHaveProperty('REIJI_ADBLOCK');
+        expect(parsed['rule-providers']).toHaveProperty('BM_ADVERTISING_LITE');
         expect(parsed['rule-providers']).toHaveProperty('PRE_REPAIR_EASY_PRIVACY_REJECT');
     });
 });
