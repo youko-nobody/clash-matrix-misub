@@ -398,6 +398,11 @@ export const REMOTE_SOURCES = {
         clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml',
         behavior: 'classical'
     },
+    BM_EASYPRIVACY: {
+        name: 'EasyPrivacy',
+        clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/EasyPrivacy/EasyPrivacy.yaml',
+        behavior: 'classical'
+    },
     BM_BILIBILI: {
         name: 'BiliBili',
         clash: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BiliBili/BiliBili.yaml',
@@ -647,6 +652,7 @@ export const RULE_SETS = {
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_PROXY,PROXY',
         'RULE-SET,PRE_REPAIR_EASY_PRIVACY_REJECT,BLOCK',
         'RULE-SET,BM_ADVERTISING_LITE,BLOCK',
+        'RULE-SET,BM_EASYPRIVACY,BLOCK',
         'RULE-SET,BLOCK_HTTP_DNS_PLUS,BLOCK',
         'RULE-SET,CHINA_DNS_DOMAIN,BLOCK',
         'RULE-SET,CHINA_DNS_IP,BLOCK',
