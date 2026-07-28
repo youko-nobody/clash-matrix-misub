@@ -8,7 +8,7 @@ import { parseNodeInfo } from '../modules/utils/geo-utils.js';
 import { getProcessedUserAgent } from '../utils/format-utils.js';
 import { buildFetchProxyUrl } from '../utils/fetch-proxy-utils.js';
 import { buildSubscriptionFetchUserAgents } from '../modules/subscription/fetch-user-agents.js';
-import { prependNodeName, addFlagEmoji, removeFlagEmoji, fixNodeUrlEncoding } from '../utils/node-utils.js';
+import { prependNodeName, removeFlagEmoji, fixNodeUrlEncoding } from '../utils/node-utils.js';
 import { runOperatorChain } from '../utils/operator-runner.js';
 import { createTimeoutFetch } from '../modules/utils.js';
 import { assertPublicNetworkUrl } from '../modules/security-utils.js';
@@ -692,11 +692,8 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
     }
 
     // --- 阶段 3: 后置格式化与增强 (Post-Formatting & Enhancement) ---
-    
-    // 3.1 最终智能化补齐 (Flag Emoji)
-    const finalLines = shouldKeepEmoji 
-        ? currentLines.map(line => addFlagEmoji(line))
-        : currentLines;
+    // 保留上游节点原始命名，不再根据地区识别自动补充国旗或地球图标。
+    const finalLines = currentLines;
 
     // --- 阶段 4: 结果拼装与返回 ---
     const finalNodeList = finalLines.join('\n');
