@@ -8,14 +8,13 @@ export const useVersionStore = defineStore('version', () => {
     const latestRelease = ref(null);
     const showModal = ref(false);
     const showUpdateNotice = ref(false);
-    const upstreamRepo = 'youko-nobody/clash-matrix-studio';
+    const upstreamRepo = 'youko-nobody/clash-matrix-misub';
 
-    const localChangelog = `✅ **Clash Matrix Studio v5.7.0**
-- 整体迁移到 MiSub 的 Cloudflare Pages + Vue 管理台架构。
-- 新增默认 \`matrix\` 分流方案，包含 AI、YouTube、TikTok、BiliBili 直连、去广告和 DNS 防污染规则。
-- 延迟测试链接改为 \`http://www.google.com/blank.html\`。
-- 增强 SS、VLESS IPv6、VLESS Reality 和 Shadowrocket 风格 VLESS 链接解析。
-- 规则源直接使用 \`raw.githubusercontent.com\`，不再默认添加 ghproxy 前缀。`;
+    const localChangelog = `Clash Matrix Studio v5.8.0
+- 修复机场订阅中的传统 Shadowsocks 节点被静态算法白名单过滤的问题。
+- 原始订阅和整份 Base64 订阅都会保留可解析的 SS 节点，客户端是否支持旧算法仍由对应内核决定。
+- 保留 SS2022 的必要校验和自动修复逻辑。
+- 公开首页调整为更清晰的订阅入口，并加入版本更新说明。`;
 
     const hasUpdate = computed(() => {
         if (!latestRelease.value?.tag_name) return false;

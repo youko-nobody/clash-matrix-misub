@@ -7,6 +7,7 @@ import { api } from '../lib/http.js';
 import ProfileGrid from '../components/public/ProfileGrid.vue';
 import BaseIcon from '../components/ui/BaseIcon.vue';
 import { parseCustomPageSource } from '../utils/custom-page-source.js';
+import ReleaseHighlights from '../components/public/ReleaseHighlights.vue';
 
 const isDev = import.meta.env.DEV;
 
@@ -363,53 +364,55 @@ onUnmounted(() => {
 
         <!-- 默认布局模式 -->
         <template v-else>
-            <!-- Hero Section (Left Aligned & Open) -->
-            <div class="relative pt-10 pb-10 lg:pt-16 lg:pb-14 z-10 overflow-visible">
-                <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative">
-                    <!-- Left Content: Text (Wider column for no-wrap) -->
-                    <div class="text-left relative z-20 lg:col-span-12 xl:col-span-12">
-                        <!-- Badge -->
-                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary-200/50 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-md mb-8 shadow-sm animate-fade-in-up">
-                            <span class="relative flex h-2 w-2">
-                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                              <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-                            </span>
-                            <span class="text-xs font-bold text-primary-700 dark:text-primary-300 tracking-widest uppercase">{{ t('publicProfiles.badge') }}</span>
+            <section class="border-b border-gray-200/80 bg-white/60 dark:border-white/10 dark:bg-white/[0.02]">
+                <div class="max-w-7xl mx-auto px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
+                    <div class="max-w-4xl">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">
+                            <span>Clash Matrix Studio</span>
+                            <span class="h-1 w-1 rounded-full bg-current opacity-60"></span>
+                            <span>{{ t('publicProfiles.badge') }}</span>
+                            <span class="font-mono text-gray-500 dark:text-gray-400">v5.8.0</span>
                         </div>
 
-                        <div v-if="isInitialLoading" class="max-w-5xl space-y-4 animate-pulse">
-                            <div class="h-10 w-44 rounded-2xl bg-white/75 dark:bg-white/10 sm:h-14 sm:w-56 lg:h-16 lg:w-72"></div>
-                            <div class="h-10 w-56 rounded-2xl bg-white/70 dark:bg-white/10 sm:h-14 sm:w-72 lg:h-16 lg:w-96"></div>
-                            <div class="h-4 w-full max-w-3xl rounded-full bg-white/65 dark:bg-white/10"></div>
-                            <div class="h-4 w-5/6 max-w-2xl rounded-full bg-white/55 dark:bg-white/10"></div>
+                        <div v-if="isInitialLoading" class="mt-5 max-w-3xl space-y-3 animate-pulse">
+                            <div class="h-10 w-44 rounded bg-gray-200/70 dark:bg-white/10 sm:w-56"></div>
+                            <div class="h-12 w-full max-w-xl rounded bg-gray-200/70 dark:bg-white/10"></div>
+                            <div class="h-4 w-full max-w-2xl rounded bg-gray-200/60 dark:bg-white/10"></div>
                         </div>
 
                         <template v-else>
-                            <h1 class="text-4xl sm:text-6xl lg:text-8xl font-black tracking-tight leading-[1.1] mb-8 animate-fade-in-up delay-100 break-words">
-                                <span class="block text-gray-900 dark:text-white drop-shadow-sm">
-                                    {{ heroConfig.title1 }}
-                                </span>
-                                <span class="block text-3xl sm:text-5xl lg:text-7xl bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-purple-500 to-indigo-500 dark:from-primary-400 dark:via-purple-400 dark:to-indigo-400 bg-[length:200%_auto] animate-gradient pb-2 mt-2">
-                                    {{ heroConfig.title2 }}
-                                </span>
+                            <h1 class="mt-5 text-4xl font-semibold leading-tight text-gray-950 dark:text-white sm:text-5xl lg:text-6xl">
+                                <span class="block">{{ heroConfig.title1 }}</span>
+                                <span class="block text-primary-700 dark:text-primary-300">{{ heroConfig.title2 }}</span>
                             </h1>
-                            
-                            <p class="text-base md:text-lg text-gray-500 dark:text-gray-400 leading-relaxed font-medium max-w-5xl mb-10 animate-fade-in-up delay-200 break-words">
+                            <p class="mt-5 max-w-3xl text-base leading-7 text-gray-600 dark:text-gray-400 md:text-lg">
                                 {{ heroConfig.description }}
                             </p>
                         </template>
                     </div>
                 </div>
-            </div>
+            </section>
 
 
             <!-- Content Section -->
-            <div class="relative z-20 pb-24">
+            <div class="relative z-20 pb-20">
                 
                 <!-- Subscription Section -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <ReleaseHighlights class="mb-10" />
+
                     <!-- Announcement Section -->
-                    <AnnouncementCard v-if="announcement && announcement.enabled" :announcement="announcement" class="mb-10" />
+                    <AnnouncementCard v-if="announcement && announcement.enabled" :announcement="announcement" class="mb-8" />
+
+                    <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-gray-950 dark:text-white">{{ t('publicProfiles.profilesTitle') }}</h2>
+                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ t('publicProfiles.profilesDescription') }}</p>
+                        </div>
+                        <span v-if="!loading && !error && publicProfiles.length" class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {{ publicProfiles.length }}
+                        </span>
+                    </div>
 
                     <!-- Loading State -->
                     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -448,23 +451,23 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Clients Section (Visually Separated) -->
-                <div class="mt-16 pt-12 pb-10 border-t border-transparent bg-transparent dark:bg-transparent backdrop-blur-sm">
+                <div v-if="clients.length" class="mt-16 border-t border-gray-200/80 py-12 dark:border-white/10">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="text-center mb-16 relative">
-                            <div class="relative inline-flex flex-col items-center">
+                        <div class="mb-10">
+                            <div>
                                 <span class="text-sm font-bold tracking-widest text-primary-600 dark:text-primary-400 uppercase mb-2">{{ t('publicProfiles.clientsEyebrow') }}</span>
-                                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                                <h2 class="text-2xl font-semibold text-gray-950 dark:text-white md:text-3xl">
                                     {{ t('publicProfiles.clientsTitle') }}
                                 </h2>
-                                <p class="mt-4 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                                <p class="mt-3 max-w-2xl text-gray-500 dark:text-gray-400">
                                     {{ t('publicProfiles.clientsDescription') }}
                                 </p>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <div v-for="client in clients" :key="client.name"
-                                class="group relative glass-panel dark:bg-white/5 backdrop-blur-2xl rounded-[2rem] p-6 shadow-xl border border-white/40 dark:border-white/5 hover:border-primary-500/30 transition-all duration-300 hover:shadow-primary-500/5">
+                                class="group border border-gray-200/80 bg-white p-5 transition-colors hover:border-primary-500/30 dark:border-white/10 dark:bg-white/[0.03]">
                                 
                                 <div class="flex items-start gap-5">
                                     <div class="h-12 w-12 misub-radius-lg flex items-center justify-center text-3xl shadow-sm bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:scale-105 transition-transform duration-300 shrink-0 overflow-hidden">

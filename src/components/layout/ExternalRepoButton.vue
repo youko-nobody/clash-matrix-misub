@@ -6,7 +6,7 @@ const { t } = useI18n();
 defineProps({
   href: {
     type: String,
-    default: 'https://github.com/imzyb/MiSub'
+    default: 'https://github.com/youko-nobody/clash-matrix-misub'
   },
   className: {
     type: [String, Array, Object],

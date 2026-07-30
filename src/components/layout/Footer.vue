@@ -20,16 +20,24 @@ const currentVersion = packageJson.version;
   <div class="flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
     <p>
       <template v-if="!hideBranding">
-        Copyright © {{ currentYear }}
+        © {{ currentYear }}
         <a
-        href="https://github.com/imzyb/MiSub"
+        href="https://github.com/youko-nobody/clash-matrix-misub"
         target="_blank"
         rel="noopener noreferrer"
         class="font-semibold text-indigo-600/80 dark:text-indigo-400/80 hover:underline"
       >
-        MiSUB
+        Clash Matrix Studio
       </a>.
-        All Rights Reserved.
+        Built on
+        <a
+          href="https://github.com/imzyb/MiSub"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-semibold text-indigo-600/80 dark:text-indigo-400/80 hover:underline"
+        >
+          MiSub
+        </a>.
       </template>
       <template v-else>
         Copyright © {{ currentYear }}. All Rights Reserved.

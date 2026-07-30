@@ -34,6 +34,7 @@ dev-dist
 # Cloudflare
 .wrangler/
 .dev.vars
+.tmp-cf-*/
 
 # IDEs and editors
 /.idea

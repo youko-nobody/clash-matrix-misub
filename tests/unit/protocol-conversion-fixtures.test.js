@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import yaml from 'js-yaml';
 import { convertClashProxyToUrl } from '../../functions/utils/clash-to-url.js';
 import { urlToClashProxy, urlsToClashProxies } from '../../functions/utils/url-to-clash.js';
-import { extractValidNodes } from '../../functions/modules/utils/node-parser.js';
+import { extractValidNodes, parseNodeList } from '../../functions/modules/utils/node-parser.js';
 import { generateBuiltinClashConfig } from '../../functions/modules/subscription/builtin-clash-generator.js';
 
 const stripGeneratedFields = (proxy) => {
@@ -517,6 +517,30 @@ proxies:
                 'grpc-mode': 'gun'
             }
         });
+    });
+
+    it('keeps legacy Shadowsocks ciphers from raw and Base64 subscription responses', () => {
+        const ssLinks = [
+            `ss://${Buffer.from('aes-256-cfb:legacy-pass', 'utf8').toString('base64')}@legacy-ss.example.com:8388#Legacy%20AES`,
+            `ss://${Buffer.from('rc4-md5:legacy-rc4-pass', 'utf8').toString('base64')}@legacy-rc4.example.com:443#Legacy%20RC4`,
+            `ss://${Buffer.from('aes-256-gcm:modern-pass', 'utf8').toString('base64')}@modern-ss.example.com:8443#Modern%20SS`
+        ];
+        const subscription = ssLinks.join('\n');
+        const base64Subscription = Buffer.from(subscription, 'utf8').toString('base64');
+
+        for (const content of [subscription, base64Subscription]) {
+            const parsedNodes = parseNodeList(content);
+
+            expect(parsedNodes).toHaveLength(3);
+            expect(parsedNodes.map(node => node.protocol)).toEqual(['ss', 'ss', 'ss']);
+
+            const proxies = urlsToClashProxies(parsedNodes.map(node => node.url));
+            expect(proxies.map(proxy => proxy.cipher)).toEqual([
+                'aes-256-cfb',
+                'rc4-md5',
+                'aes-256-gcm'
+            ]);
+        }
     });
 
     it('documents one-way exports whose emitted schemes are not parsed back yet', () => {

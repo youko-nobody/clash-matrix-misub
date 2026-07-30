@@ -228,18 +228,6 @@ export function extractValidNodes(text) {
 }
 
 /**
- * 支持的 Shadowsocks 加密算法
- * 包含现代 AEAD / SS2022，同时保留 `none` 以兼容合法的无加密节点。
- */
-const SUPPORTED_SS_CIPHERS = [
-    'none',
-    'aes-128-gcm', 'aes-256-gcm',
-    'chacha20-poly1305', 'chacha20-ietf-poly1305',
-    'xchacha20-ietf-poly1305',
-    '2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', '2022-blake3-chacha20-poly1305'
-];
-
-/**
  * 验证 UUID 格式
  */
 function isValidUUID(uuid) {
@@ -258,73 +246,11 @@ export function parseNodeList(content, options = {}) {
         // 1. 修复编码 (如 Hysteria2 密码)
         let fixedUrl = fixNodeUrlEncoding(nodeUrl, options);
 
-        // 2. [新增] 验证和修复 SS 2022 节点 & 过滤传统 SS 算法
+        // 2. 验证和修复 SS 2022 节点。
+        // 不在解析阶段用静态算法白名单过滤 SS：机场仍可能返回旧算法，
+        // 应保留节点并交给目标客户端判断其内核是否支持。
         let ss2022Warning = null;
         if (fixedUrl.startsWith('ss://')) {
-            // 2.1 提取加密算法
-            let method = '';
-            try {
-                let body = fixedUrl.substring(5); // remove ss://
-                const hashIndex = body.indexOf('#');
-                if (hashIndex !== -1) body = body.substring(0, hashIndex);
-
-                // 处理 user@server:port 格式 (明文)
-                const atIndex = body.lastIndexOf('@');
-                if (atIndex !== -1 && !body.includes('://')) { // 排除 SIP002 base64 整体编码可能包含 @
-                    // 明文格式通常不常见用于订阅，多见于手动配置
-                    // userInfo = method:password
-                    const userInfo = body.substring(0, atIndex);
-                    // 还要考虑是否是 Base64 编码的 userInfo
-                    // 尝试简单判断: 包含 : 可能是明文，否则可能是 Base64
-                    if (userInfo.includes(':')) {
-                        method = userInfo.split(':')[0];
-                    } else {
-                        // Base64 解码 userInfo
-                        try {
-                            const decodedUser = atob(userInfo);
-                            if (decodedUser.includes(':')) method = decodedUser.split(':')[0];
-                        } catch (e) {
-                            console.debug('[NodeParser] Failed to decode SS user info:', e);
-                        }
-                    }
-                } else {
-                    // 处理 Base64 格式 (SIP002) ss://base64(method:password@server:port)
-                    // 或者 ss://base64(method:password)@server:port (旧式)
-                    try {
-                        let decoded = atob(body);
-                        // 格式: method:password@server:port
-                        if (decoded.includes('@')) {
-                            const userInfo = decoded.split('@')[0];
-                            if (userInfo.includes(':')) method = userInfo.split(':')[0];
-                        }
-                    } catch (e) {
-                        // 如果整体解码失败，可能是旧式 ss://userInfoBase64@server:port
-                        const atIndex = body.lastIndexOf('@');
-                        if (atIndex !== -1) {
-                            const userInfoBase64 = body.substring(0, atIndex);
-                            try {
-                                const decodedUser = atob(userInfoBase64);
-                                if (decodedUser.includes(':')) method = decodedUser.split(':')[0];
-                            } catch (e2) {
-                                console.debug('[NodeParser] Failed to decode SS user info fallback:', e2);
-                            }
-                        } else {
-                            console.debug('[NodeParser] Failed to decode SS payload:', e);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.debug('[NodeParser] Failed to extract SS cipher:', e);
-            }
-
-            // 2.2 验证加密算法
-            if (method) {
-                const normalizedMethod = method.toLowerCase();
-                if (!SUPPORTED_SS_CIPHERS.includes(normalizedMethod)) {
-                    return null;
-                }
-            }
-
             const validation = validateSS2022Node(fixedUrl);
 
             // ... (rest of SS2022 validation)
