@@ -45,6 +45,48 @@
 
 > v5.8.0 中针对传统 Shadowsocks 节点识别的修复仍然保留：解析器不会在解析阶段提前丢弃可解析的 SS 节点。
 
+## 本项目额外增强与修复
+
+这个仓库基于 MiSub 做了面向自用订阅聚合的二次改造，重点不是只换皮，而是围绕 Clash Matrix Studio 的实际使用场景补了协议解析、规则模板、客户端兼容和 Cloudflare 部署体验。
+
+### 新增能力
+
+- 中文化项目首页、部署文档和小白教程，Cloudflare Pages / KV / D1 的部署路径更清楚。
+- 新增 Matrix 分流模板，内置 `PROXY`、`TG`、`AI`、`YOUTUBE`、`TIKTOK`、`APPLE`、`BANK`、`FINANCE`、`FAKE-LOCATION`、`BLOCK`、`FINAL` 等策略组。
+- 新增可视化自定义规则能力，可以在后台创建策略组、写入域名/IP 规则，并让规则进入 Matrix 模板。
+- 新增 TikTok 独立策略组，小红书和 BiliBili 默认直连，保留局域网和内网地址过滤。
+- 新增链式代理页面，可以手动选择前置节点和后置节点，额外生成 `dialer-proxy` 链式节点。
+- 链式代理支持排序，订阅组中的链式代理也支持排序；最终导出顺序固定为：手动节点 -> 链式代理 -> 机场订阅。
+- 新增 Fetch Proxy 支持，用于处理部分机场订阅不允许 Cloudflare 直接拉取的问题。
+- 支持订阅公开页、二维码、一键导入、节点预览、访问日志、备份恢复和定时刷新。
+- 管理后台改为更接近 MiSub 本体的布局，并针对移动端、链式代理页面、手动节点列表和订阅组选择器做了使用体验优化。
+
+### 协议与解析修复
+
+- 修复传统 Shadowsocks / SIP002 节点识别问题，避免 `ss://method:password@host:port#name` 或 URL 编码 Base64 节点被误丢弃。
+- 修复整份 Base64 订阅、URL 编码 Base64、SS2022、SS v2ray-plugin 参数解析兼容。
+- 修复 VLESS IPv6 地址解析，例如 `[2400:xxxx::x]:port` 不再被拆错。
+- 修复 Reality / Vision / WebSocket TLS / host / path / insecure 等常见 VLESS 参数转换问题。
+- 兼容 Shadowrocket 风格的 VLESS 链接，例如 `remarks`、`peer`、`tls`、`xtls`、`pbk`、`sid` 等参数。
+- 修复预览和导出时把 `HTTP 503` 等上游错误文本误识别成手动节点的问题。
+
+### 客户端兼容修复
+
+- 为 Clash / Mihomo / Meta 生成 `dialer-proxy` 链式节点；旧 Clash 内核不支持时会自动跳过链式节点，避免导入失败。
+- 修复 Stash 中部分 WebSocket TLS 优选节点可导入但选中后没网的问题。
+- 修复 Stash 导入后几秒退出代理的配置兼容问题，默认不再输出 `privacy-protection-tools/anti-AD` 和 `REIJI007/AdBlock_Rule_For_Clash` 这类超大规则集。
+- 策略组图标改为 Clash / Stash / FlClash 更容易识别的图标，不再把图标直接塞进策略组名称。
+- 保留用户原始节点命名，不默认给节点名前追加地区旗帜或“手动选择”等多余前缀。
+- 关闭默认流量节点展示，避免客户端节点页被无用信息占据。
+- 链式代理依赖节点会保留在 `proxies` 中供 `dialer-proxy` 使用，但如果用户没有勾选该节点，它不会再单独进入 `PROXY` / 自动测速等策略组。
+
+### 规则源与安全修复
+
+- 规则源默认直接使用 `raw.githubusercontent.com`，不再强制套 `https://mirror.ghproxy.com/`。
+- 保留轻量广告、HTTPDNS、DNS 劫持和隐私修复规则，同时避免默认加载过大的广告规则导致客户端崩溃。
+- 加强 DNS 相关模板，减少国内 DNS 泄露风险；域名节点仍保留可解析性，避免一刀切改国外 DNS 后出现域名节点失效。
+- 开源仓库不包含真实节点、机场订阅、Token、管理员密码或私人规则；这些数据都应只保存在部署后的后台数据库/KV 中。
+
 ## 功能说明
 
 | 功能 | 说明 |
