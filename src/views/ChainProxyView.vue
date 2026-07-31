@@ -15,9 +15,13 @@ const { subscriptions, profiles, saveState, isDirty } = storeToRefs(dataStore);
 const { showToast } = useToastStore();
 const { chainProxies, addChainProxy, updateChainProxy, deleteChainProxy, reorderChainProxies } = useChainProxies(dataStore.markDirty);
 
-const selectedProfileId = ref('');
+const CANDIDATE_SOURCE_ALL = '__all_enabled_nodes__';
+const PREVIEW_USER_AGENT = 'v2rayN/7.23';
+
+const selectedProfileId = ref(CANDIDATE_SOURCE_ALL);
 const loadingNodes = ref(false);
 const nodeLoadError = ref('');
+const nodeLoadWarning = ref('');
 const profileNodes = ref([]);
 const selectedFrontNames = ref([]);
 const selectedBackNames = ref([]);
@@ -34,9 +38,26 @@ const enabledSubscriptions = computed(() => (subscriptions.value || []).filter(s
   return sub.enabled !== false && /^https?:\/\//i.test(url);
 }));
 const enabledProfiles = computed(() => (profiles.value || []).filter(profile => profile.enabled !== false));
+const hasCandidateSources = computed(() => enabledManualNodes.value.length > 0 || enabledSubscriptions.value.length > 0);
+const isAllCandidateSource = computed(() => selectedProfileId.value === CANDIDATE_SOURCE_ALL);
 const selectedProfile = computed(() => {
-  return (profiles.value || []).find(profile => profile.id === selectedProfileId.value || profile.customId === selectedProfileId.value) || null;
+  if (isAllCandidateSource.value) return null;
+  return enabledProfiles.value.find(profile => profile.id === selectedProfileId.value || profile.customId === selectedProfileId.value) || null;
 });
+const canRefreshNodes = computed(() => !loadingNodes.value && hasCandidateSources.value && (isAllCandidateSource.value || Boolean(selectedProfile.value)));
+const enabledSubscriptionFingerprint = computed(() => enabledSubscriptions.value
+  .map(sub => [
+    sub.id,
+    sub.enabled !== false,
+    sub.url,
+    sub.name,
+    sub.customUserAgent,
+    sub.exclude,
+    sub.fetchProxy,
+    sub.plusAsSpace,
+    sub.enableNodeCache
+  ].join('\u0001'))
+  .join('\u0002'));
 
 const chainNodes = computed(() => {
   return chainProxies.value;
@@ -329,17 +350,64 @@ const clearFrontSelection = () => clearSelection(selectedFrontNames);
 const clearBackSelection = () => clearSelection(selectedBackNames);
 
 const loadProfileNodes = async () => {
-  if (!selectedProfile.value) {
+  if (!isAllCandidateSource.value && !selectedProfile.value) {
     profileNodes.value = [];
     return;
   }
 
   loadingNodes.value = true;
   nodeLoadError.value = '';
+  nodeLoadWarning.value = '';
   try {
+    if (isAllCandidateSource.value) {
+      if (enabledSubscriptions.value.length === 0) {
+        profileNodes.value = [];
+        return;
+      }
+
+      const results = await Promise.allSettled(enabledSubscriptions.value.map(async subscription => {
+        const data = await api.post('/api/subscription_nodes', {
+          subscriptionId: subscription.id,
+          userAgent: PREVIEW_USER_AGENT
+        });
+
+        if (!data.success) {
+          throw new Error(data.error || '节点预览失败');
+        }
+
+        return {
+          subscriptionName: subscription.name || '未命名机场订阅',
+          nodes: Array.isArray(data.nodes) ? data.nodes : []
+        };
+      }));
+
+      const loadedNodes = [];
+      const failedSources = [];
+      results.forEach((result, index) => {
+        const subscriptionName = enabledSubscriptions.value[index]?.name || '未命名机场订阅';
+        if (result.status === 'fulfilled') {
+          loadedNodes.push(...result.value.nodes);
+        } else {
+          failedSources.push(subscriptionName);
+        }
+      });
+
+      profileNodes.value = loadedNodes;
+
+      if (failedSources.length) {
+        const message = `部分机场订阅读取失败：${failedSources.slice(0, 3).join('、')}${failedSources.length > 3 ? ' 等' : ''}`;
+        if (loadedNodes.length || enabledManualNodes.value.length) {
+          nodeLoadWarning.value = message;
+        } else {
+          nodeLoadError.value = message;
+        }
+      }
+      return;
+    }
+
     const data = await api.post('/api/subscription_nodes', {
       profileId: selectedProfile.value.customId || selectedProfile.value.id,
-      userAgent: 'v2rayN/7.23',
+      userAgent: PREVIEW_USER_AGENT,
       applyTransform: true
     });
 
@@ -356,9 +424,8 @@ const loadProfileNodes = async () => {
 };
 
 const ensureProfileSelected = () => {
-  if (selectedProfile.value) return;
-  const first = enabledProfiles.value[0] || profiles.value[0];
-  selectedProfileId.value = resolveProfileKey(first);
+  if (isAllCandidateSource.value || selectedProfile.value) return;
+  selectedProfileId.value = CANDIDATE_SOURCE_ALL;
 };
 
 const makeRuleName = (frontName, backName, isSingle) => {
@@ -368,8 +435,8 @@ const makeRuleName = (frontName, backName, isSingle) => {
 };
 
 const handleSubmit = () => {
-  if (!selectedProfile.value) {
-    showToast('请先选择一个候选节点来源', 'warning');
+  if (!hasCandidateSources.value) {
+    showToast('请先添加或启用手动节点、机场订阅', 'warning');
     return;
   }
   if (!selectedFrontNames.value.length || !selectedBackNames.value.length) {
@@ -483,6 +550,11 @@ watch(selectedProfileId, () => {
   resetFilters();
   loadProfileNodes();
 }, { immediate: true });
+watch(enabledSubscriptionFingerprint, () => {
+  if (isAllCandidateSource.value) {
+    loadProfileNodes();
+  }
+});
 </script>
 
 <template>
@@ -507,25 +579,31 @@ watch(selectedProfileId, () => {
           </p>
         </div>
 
-        <div class="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] lg:w-auto lg:min-w-[560px]">
-          <select
-            v-model="selectedProfileId"
-            class="min-h-11 w-full border border-gray-200/80 bg-white/80 px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-white/10 dark:bg-gray-800/70 dark:text-white misub-radius-lg"
-            aria-label="当前订阅组"
-          >
-            <option v-for="profile in profiles" :key="profile.id" :value="profile.id">
-              {{ profile.name || '未命名订阅组' }}
-            </option>
-          </select>
+        <div class="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end lg:w-auto lg:min-w-[640px]">
+          <label class="block">
+            <span class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">候选节点来源</span>
+            <select
+              v-model="selectedProfileId"
+              class="min-h-11 w-full border border-gray-200/80 bg-white/80 px-3 py-2.5 text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-white/10 dark:bg-gray-800/70 dark:text-white misub-radius-lg"
+              aria-label="候选节点来源"
+            >
+              <option :value="CANDIDATE_SOURCE_ALL">全部启用节点</option>
+              <optgroup v-if="enabledProfiles.length" label="按我的订阅生成候选">
+                <option v-for="profile in enabledProfiles" :key="profile.id" :value="profile.id">
+                  {{ profile.name || '未命名订阅组' }}
+                </option>
+              </optgroup>
+            </select>
+          </label>
 
           <button
             type="button"
             class="inline-flex min-h-11 items-center justify-center gap-2 border border-gray-200/80 bg-white/80 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 dark:hover:bg-white/[0.07] misub-radius-lg"
-            :disabled="loadingNodes || !selectedProfile"
+            :disabled="!canRefreshNodes"
             @click="loadProfileNodes"
           >
             <BaseIcon :path="ICONS.refresh" className="h-4 w-4" :class="{ 'animate-spin': loadingNodes }" />
-            {{ loadingNodes ? '读取中' : '刷新节点' }}
+            {{ loadingNodes ? '读取中' : '刷新候选' }}
           </button>
 
           <button
@@ -541,10 +619,10 @@ watch(selectedProfileId, () => {
       </div>
     </section>
 
-    <section v-if="profiles.length === 0" class="border border-dashed border-gray-300 bg-white/90 p-8 text-center dark:border-white/15 dark:bg-gray-900/80 misub-radius-lg">
+    <section v-if="!hasCandidateSources && !chainNodes.length" class="border border-dashed border-gray-300 bg-white/90 p-8 text-center dark:border-white/15 dark:bg-gray-900/80 misub-radius-lg">
       <BaseIcon :path="ICONS.node" className="mx-auto h-8 w-8 text-gray-400" />
-      <h2 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">还没有我的订阅</h2>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">请先去“我的订阅”创建一个 Profile，再回来配置链式节点。</p>
+      <h2 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">还没有候选节点</h2>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">请先添加并启用手动节点或机场订阅，再回来配置链式代理。</p>
     </section>
 
     <template v-else>
@@ -586,6 +664,11 @@ watch(selectedProfileId, () => {
         <div v-if="duplicateNames.length" class="mt-4 flex items-start gap-3 border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200 misub-radius-lg">
           <BaseIcon :path="ICONS.warning" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>检测到重复节点名：{{ duplicateNames.slice(0, 5).join('、') }}{{ duplicateNames.length > 5 ? ' 等' : '' }}。链式代理按节点名匹配，建议先去重或重命名。</span>
+        </div>
+
+        <div v-if="nodeLoadWarning" class="mt-4 flex items-start gap-3 border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-800 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200 misub-radius-lg">
+          <BaseIcon :path="ICONS.warning" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{{ nodeLoadWarning }}。已先显示可读取到的候选节点。</span>
         </div>
 
         <div v-if="missingRules.length" class="mt-4 flex flex-col gap-3 border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between misub-radius-lg">
