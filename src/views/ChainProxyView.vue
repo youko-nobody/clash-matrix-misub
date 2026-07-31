@@ -53,6 +53,58 @@ const getNodeProtocol = (url) => {
   return protocol;
 };
 
+const decodeBase64Url = (value) => {
+  const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+  return atob(normalized.padEnd(normalized.length + (4 - normalized.length % 4) % 4, '='));
+};
+
+const stableStringify = (value) => {
+  if (!value || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+};
+
+const getNodeConnectionKey = (url) => {
+  const rawUrl = String(url || '').trim();
+  if (!rawUrl) return '';
+
+  const protocol = getNodeProtocol(rawUrl).toLowerCase();
+  if (protocol === 'vmess') {
+    try {
+      const encodedConfig = rawUrl.slice('vmess://'.length).split('#')[0].trim();
+      const config = JSON.parse(decodeBase64Url(encodedConfig));
+      delete config.ps;
+      return `vmess:${stableStringify(config)}`;
+    } catch {
+      return rawUrl.split('#')[0];
+    }
+  }
+
+  try {
+    const parsedUrl = new URL(rawUrl);
+    parsedUrl.hash = '';
+    ['remarks', 'remark', 'name', 'ps'].forEach(param => parsedUrl.searchParams.delete(param));
+    return parsedUrl.toString();
+  } catch {
+    return rawUrl.split('#')[0];
+  }
+};
+
+const getCandidateIdentity = (node) => {
+  const connectionKey = getNodeConnectionKey(node?.url);
+  if (connectionKey) return `url:${connectionKey}`;
+
+  const id = String(node?.id || '').trim();
+  if (id) return `id:${id}`;
+
+  return [
+    'meta',
+    String(node?.source || '').trim(),
+    String(node?.protocol || '').trim(),
+    String(node?.region || '').trim()
+  ].join(':');
+};
+
 const buildManualCandidate = (node) => {
   const customName = String(node?.name || '').trim();
   const linkName = extractNodeName(node?.url);
@@ -61,6 +113,8 @@ const buildManualCandidate = (node) => {
   const source = group ? `\u624b\u52a8\u8282\u70b9 \u00b7 ${group}` : '\u624b\u52a8\u8282\u70b9';
 
   return {
+    id: String(node?.id || '').trim(),
+    url: String(node?.url || '').trim(),
     name,
     protocol: getNodeProtocol(node?.url).toUpperCase(),
     region: group || '\u624b\u52a8\u8282\u70b9',
@@ -72,6 +126,8 @@ const buildManualCandidate = (node) => {
 };
 
 const buildPreviewCandidate = (node) => ({
+  id: String(node.id || '').trim(),
+  url: String(node.url || '').trim(),
   name: String(node.name || '').trim(),
   protocol: String(node.protocol || 'unknown').toUpperCase(),
   region: String(node.region || '\u5176\u4ed6'),
@@ -112,13 +168,14 @@ const protocolOptions = computed(() => {
 });
 
 const duplicateNames = computed(() => {
-  const counts = new Map();
+  const identitiesByName = new Map();
   rawAvailableNodes.value.forEach(node => {
     const name = String(node.name || '').trim();
     if (!name) return;
-    counts.set(name, (counts.get(name) || 0) + 1);
+    if (!identitiesByName.has(name)) identitiesByName.set(name, new Set());
+    identitiesByName.get(name).add(getCandidateIdentity(node));
   });
-  return Array.from(counts.entries()).filter(([, count]) => count > 1).map(([name]) => name);
+  return Array.from(identitiesByName.entries()).filter(([, identities]) => identities.size > 1).map(([name]) => name);
 });
 
 const missingRules = computed(() => {
