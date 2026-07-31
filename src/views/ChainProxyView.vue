@@ -4,8 +4,10 @@ import { storeToRefs } from 'pinia';
 import { useDataStore } from '../stores/useDataStore.js';
 import { useToastStore } from '../stores/toast.js';
 import { api } from '../lib/http.js';
+import { extractNodeName } from '../lib/utils.js';
 import { isManualNodeEntry } from '../composables/manual-nodes/filters.js';
 import { useChainProxies } from '../composables/useChainProxies.js';
+import { NODE_PROTOCOL_REGEX } from '../constants/nodeProtocols.js';
 import BaseIcon from '../components/ui/BaseIcon.vue';
 
 const dataStore = useDataStore();
@@ -40,9 +42,52 @@ const chainNodes = computed(() => {
   return chainProxies.value;
 });
 
+const getNodeProtocol = (url) => {
+  const match = String(url || '').trim().match(NODE_PROTOCOL_REGEX);
+  if (!match) return 'unknown';
+  const protocol = String(match[1] || '').toLowerCase();
+  if (protocol === 'hy2') return 'hysteria2';
+  if (protocol === 'hy') return 'hysteria';
+  if (protocol.startsWith('naive+')) return 'naive';
+  if (protocol === 'socks') return 'socks5';
+  return protocol;
+};
+
+const buildManualCandidate = (node) => {
+  const customName = String(node?.name || '').trim();
+  const linkName = extractNodeName(node?.url);
+  const name = customName || String(linkName || '').trim();
+  const group = String(node?.group || '').trim();
+  const source = group ? `\u624b\u52a8\u8282\u70b9 \u00b7 ${group}` : '\u624b\u52a8\u8282\u70b9';
+
+  return {
+    name,
+    protocol: getNodeProtocol(node?.url).toUpperCase(),
+    region: group || '\u624b\u52a8\u8282\u70b9',
+    source,
+    subscriptionName: source,
+    group: source,
+    isManualNode: true
+  };
+};
+
+const buildPreviewCandidate = (node) => ({
+  name: String(node.name || '').trim(),
+  protocol: String(node.protocol || 'unknown').toUpperCase(),
+  region: String(node.region || '\u5176\u4ed6'),
+  source: String(node.source || node.subscriptionName || node.group || '\u672a\u77e5\u6765\u6e90'),
+  subscriptionName: String(node.source || node.subscriptionName || node.group || '\u672a\u77e5\u6765\u6e90'),
+  group: String(node.source || node.subscriptionName || node.group || '\u672a\u77e5\u6765\u6e90')
+});
+
+const rawAvailableNodes = computed(() => [
+  ...enabledManualNodes.value.map(buildManualCandidate),
+  ...profileNodes.value.map(buildPreviewCandidate)
+].filter(node => node.name));
+
 const availableNodes = computed(() => {
   const seen = new Set();
-  return profileNodes.value
+  return rawAvailableNodes.value
     .map(node => ({
       name: String(node.name || '').trim(),
       protocol: String(node.protocol || 'unknown').toUpperCase(),
@@ -68,7 +113,7 @@ const protocolOptions = computed(() => {
 
 const duplicateNames = computed(() => {
   const counts = new Map();
-  profileNodes.value.forEach(node => {
+  rawAvailableNodes.value.forEach(node => {
     const name = String(node.name || '').trim();
     if (!name) return;
     counts.set(name, (counts.get(name) || 0) + 1);

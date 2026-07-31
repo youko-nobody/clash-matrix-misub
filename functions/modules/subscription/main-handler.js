@@ -226,6 +226,44 @@ function buildProfileTargetMisubs(profile, misubMap) {
     return targetMisubs;
 }
 
+function getChainEndpointNames(chainNodes = []) {
+    const names = new Set();
+    (Array.isArray(chainNodes) ? chainNodes : []).forEach(rule => {
+        if (!rule || rule.enabled === false) return;
+        const frontName = String(rule.frontName || rule.front || rule.entryNodeName || rule.entry || '').trim();
+        const backName = String(rule.backName || rule.back || rule.exitNodeName || rule.exit || '').trim();
+        if (frontName) names.add(frontName);
+        if (backName) names.add(backName);
+    });
+    return names;
+}
+
+function appendChainDependencyManualNodes(targetMisubs, allMisubs, chainNodes) {
+    const dependencyNames = getChainEndpointNames(chainNodes);
+    if (dependencyNames.size === 0) return targetMisubs;
+
+    const existingIds = new Set((targetMisubs || []).map(item => item?.id).filter(Boolean));
+    const existingNames = new Set(
+        (targetMisubs || [])
+            .filter(isManualNodeEntry)
+            .map(item => String(item?.name || '').trim())
+            .filter(Boolean)
+    );
+
+    const dependencyManualNodes = (allMisubs || [])
+        .filter(item => item?.enabled !== false && isManualNodeEntry(item))
+        .filter(item => {
+            const name = String(item?.name || '').trim();
+            return name && dependencyNames.has(name) && !existingIds.has(item.id) && !existingNames.has(name);
+        });
+
+    if (dependencyManualNodes.length === 0) return targetMisubs;
+
+    const manualNodes = (targetMisubs || []).filter(isManualNodeEntry);
+    const otherMisubs = (targetMisubs || []).filter(item => !isManualNodeEntry(item));
+    return [...manualNodes, ...dependencyManualNodes, ...otherMisubs];
+}
+
 export function resolveTemplateUrl(mode, value, fallbackUrl = '') {
     const normalizedMode = typeof mode === 'string' ? mode.trim().toLowerCase() : '';
     const normalizedValue = typeof value === 'string' ? value.trim() : '';
@@ -577,6 +615,7 @@ export async function handleMisubRequest(context) {
                 }
                 targetMisubs = buildProfileTargetMisubs(profile, misubMap);
                 selectedChainProxies = resolveSelectedChainProxies(profile, relatedSubs);
+                targetMisubs = appendChainDependencyManualNodes(targetMisubs, allMisubs, selectedChainProxies);
             }
             // [新增] 增加订阅组下载计数
             // 仅在非回调请求时及非内部请求时增加计数(避免重复计数)

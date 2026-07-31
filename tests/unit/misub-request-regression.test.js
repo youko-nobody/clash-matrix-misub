@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import yaml from 'js-yaml';
 
 const createAdapter = vi.fn();
 const getStorageType = vi.fn();
@@ -347,6 +348,77 @@ describe('handleMisubRequest regression coverage', () => {
             const [updatedSub] = adapter.store.get('misub_subscriptions_v1');
             expect(updatedSub.nodeCount).toBe(0);
             expect(updatedSub.userInfo).toBeNull();
+        } finally {
+            logSpy.mockRestore();
+        }
+    });
+
+    it('includes manual-node dependencies referenced by selected chain proxies in profile exports', async () => {
+        const subscriptions = [
+            {
+                id: 'manual-front',
+                name: 'ManualFront',
+                url: 'ss://YWVzLTEyOC1nY206ZnJvbnQtcGFzcw==@front.example.com:8388#ManualFront',
+                enabled: true
+            },
+            {
+                id: 'chain-1',
+                type: 'chain',
+                isChainProxy: true,
+                name: 'Chain ManualFront -> AirportBack',
+                frontName: 'ManualFront',
+                backName: 'Airport A - AirportBack',
+                enabled: true,
+                url: ''
+            },
+            {
+                id: 'sub-a',
+                name: 'Airport A',
+                url: 'https://airport.example/sub',
+                enabled: true
+            }
+        ];
+        const profiles = [{
+            id: 'profile-1',
+            customId: 'profile-1',
+            name: 'Profile One',
+            enabled: true,
+            manualNodes: [],
+            subscriptions: ['sub-a'],
+            chainNodes: ['chain-1']
+        }];
+        const adapter = createStorageAdapter({
+            settings: {
+                profileToken: 'profile-token',
+                enableFlagEmoji: false,
+                enableTrafficNode: false
+            },
+            subscriptions,
+            profiles
+        });
+        createAdapter.mockReturnValue(adapter);
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('trojan://back-pass@back.example.com:443#AirportBack', { status: 200 })));
+
+        const logSpy = silenceExpectedRequestLogs();
+        try {
+            const { handleMisubRequest } = await import('../../functions/modules/subscription/main-handler.js');
+            const response = await handleMisubRequest({
+                request: new Request('https://misub.example/profile-token/profile-1?target=clash&builtin=true&refresh=1', {
+                    headers: { 'User-Agent': 'ClashMeta' }
+                }),
+                env: {},
+                waitUntil: vi.fn()
+            });
+            const parsed = yaml.load(await response.text());
+            const proxyNames = parsed.proxies.map(proxy => proxy.name);
+            const chainProxy = parsed.proxies.find(proxy => proxy.name === 'Chain ManualFront -> AirportBack');
+
+            expect(response.status).toBe(200);
+            expect(proxyNames).toEqual(['ManualFront', 'Chain ManualFront -> AirportBack', 'Airport A - AirportBack']);
+            expect(chainProxy).toMatchObject({
+                server: 'back.example.com',
+                'dialer-proxy': 'ManualFront'
+            });
         } finally {
             logSpy.mockRestore();
         }
