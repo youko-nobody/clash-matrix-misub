@@ -12,6 +12,7 @@ import { resolveRuleTemplateSource } from '../modules/rule-template-handler.js';
 import { base64EncodeUtf8 } from '../modules/utils.js';
 import yaml from 'js-yaml';
 import { urlsToClashProxies } from '../utils/url-to-clash.js';
+import { appendManualChainProxies } from '../modules/subscription/builtin-clash-generator.js';
 
 function getTemplateExtension(templateUrl) {
     const raw = typeof templateUrl === 'string' ? templateUrl.trim() : '';
@@ -78,8 +79,12 @@ export function renderClashYamlProfileTemplate(templateText, nodeList, options =
         .split(/\r?\n+/)
         .map(line => line.trim())
         .filter(line => line && !line.startsWith('#'));
-    const proxies = urlsToClashProxies(nodeUrls, options).map(stripInternalProxyFields);
+    let proxies = urlsToClashProxies(nodeUrls, options);
     deduplicateProxyNames(proxies);
+    if (options.isMeta && Array.isArray(options.chainNodes) && options.chainNodes.length > 0) {
+        proxies = appendManualChainProxies(proxies, options.chainNodes, options.chainInsertAfter);
+    }
+    proxies = proxies.map(stripInternalProxyFields);
 
     return yaml.dump({
         ...config,
@@ -189,7 +194,9 @@ export class ProcessorService {
                     managedConfigUrl,
                     skipCertVerify: builtinOptions.skipCertVerify,
                     enableUdp: builtinOptions.enableUdp,
-                    isMeta: builtinOptions.isMeta
+                    isMeta: builtinOptions.isMeta,
+                    chainNodes: builtinOptions.chainNodes,
+                    chainInsertAfter: builtinOptions.chainInsertAfter
                 };
 
                 switch (targetFormat) {

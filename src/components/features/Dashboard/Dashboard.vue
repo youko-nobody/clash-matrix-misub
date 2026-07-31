@@ -11,6 +11,7 @@ import { useSubscriptionForms } from '../../../composables/useSubscriptionForms.
 import { useNodeForms } from '../../../composables/useNodeForms.js';
 import { useBulkImportLogic } from '../../../composables/useBulkImportLogic.js';
 import { useBackupLogic } from '../../../composables/useBackupLogic.js';
+import { useChainProxies } from '../../../composables/useChainProxies.js';
 import { storeToRefs } from 'pinia';
 import { useI18n } from '@/i18n/index.js';
 
@@ -122,6 +123,8 @@ const {
   manualNodeGroups, renameGroup, deleteGroup, reorderGroups, // Added group helpers
   pingResults, pingingNodes, pingNodeId, pingAllNodes
 } = useManualNodes(markDirty);
+
+const { chainProxies } = useChainProxies(markDirty);
 
 const handleSearchTermUpdate = (val) => {
   searchTerm.value = val;
@@ -492,7 +495,7 @@ import SavePrompt from '../../ui/SavePrompt.vue';
     </template></Modal>
 
   <ProfileModal v-if="showProfileModal" v-model:show="showProfileModal" :profile="editingProfile" :is-new="isNewProfile"
-    :all-subscriptions="subscriptions" :all-manual-nodes="manualNodes" @save="handleSaveProfile" size="6xl" />
+    :all-subscriptions="subscriptions" :all-manual-nodes="manualNodes" :all-chain-proxies="chainProxies" @save="handleSaveProfile" size="6xl" />
 
   <ManualNodeEditModal v-model:show="showNodeModal" :is-new="isNewNode" :editing-node="editingNode"
     :groups="manualNodeGroups" @confirm="handleSaveNode" @input-url="handleNodeUrlInput" />

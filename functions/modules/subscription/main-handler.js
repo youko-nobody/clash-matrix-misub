@@ -21,6 +21,7 @@ import { shouldApplyExternalTemplateForTarget } from './template-compatibility.j
 import { renderClashFromIniTemplate, renderLoonFromIniTemplate, renderQuanxFromIniTemplate, renderSingboxFromIniTemplate, renderSurgeFromIniTemplate } from './template-pipeline.js';
 import { getBuiltinTemplate } from './builtin-template-registry.js';
 import { assertPublicNetworkUrl } from '../security-utils.js';
+import { NODE_PROTOCOL_REGEX } from '../../utils/node-utils.js';
 
 function maskSensitiveLogValue(value) {
     const text = String(value ?? '');
@@ -158,6 +159,71 @@ function buildUserInfoHeaderFromSubscriptions(context, subscriptions) {
     return safeUserInfo.total > 0
         ? `upload=${safeUserInfo.upload}; download=${safeUserInfo.download}; total=${safeUserInfo.total}; expire=${safeUserInfo.expire}`
         : null;
+}
+
+function isChainProxyEntry(item) {
+    return item?.isChainProxy === true || item?.type === 'chain';
+}
+
+function getItemUrl(item) {
+    return typeof item?.url === 'string' ? item.url.trim() : '';
+}
+
+function isRemoteSubscriptionEntry(item) {
+    const url = getItemUrl(item);
+    return /^https?:\/\//i.test(url) && !isChainProxyEntry(item);
+}
+
+function isManualNodeEntry(item) {
+    const url = getItemUrl(item);
+    return Boolean(url) && !/^https?:\/\//i.test(url) && !isChainProxyEntry(item) && NODE_PROTOCOL_REGEX.test(url);
+}
+
+function getProfileItemId(item) {
+    return item && typeof item === 'object' ? item.id : item;
+}
+
+function resolveSelectedChainProxies(profile, allMisubs = []) {
+    const profileChains = Array.isArray(profile?.chainNodes) ? profile.chainNodes : [];
+    if (profileChains.length === 0) return [];
+
+    const chainMap = new Map(
+        (allMisubs || [])
+            .filter(isChainProxyEntry)
+            .map(item => [item.id, item])
+    );
+
+    return profileChains
+        .map(item => {
+            const id = getProfileItemId(item);
+            if (id && chainMap.has(id)) return chainMap.get(id);
+            return item && typeof item === 'object' ? item : null;
+        })
+        .filter(item => item && item.enabled !== false);
+}
+
+function buildProfileTargetMisubs(profile, misubMap) {
+    const targetMisubs = [];
+
+    const profileNodeIds = Array.isArray(profile?.manualNodes) ? profile.manualNodes : [];
+    profileNodeIds.forEach(id => {
+        const node = misubMap.get(id);
+        if (node && node.enabled && isManualNodeEntry(node)) {
+            targetMisubs.push(node);
+        }
+    });
+
+    const profileSubItems = Array.isArray(profile?.subscriptions) ? profile.subscriptions : [];
+    profileSubItems.forEach(item => {
+        const isObject = item && typeof item === 'object';
+        const id = getProfileItemId(item);
+        const baseSub = misubMap.get(id);
+        if (baseSub && baseSub.enabled && isRemoteSubscriptionEntry(baseSub)) {
+            targetMisubs.push(isObject ? { ...baseSub, ...item } : baseSub);
+        }
+    });
+
+    return targetMisubs;
 }
 
 export function resolveTemplateUrl(mode, value, fallbackUrl = '') {
@@ -443,6 +509,7 @@ export async function handleMisubRequest(context) {
     let targetMisubs;
     let subName = config.FileName;
     let isProfileExpired = false; // Moved declaration here
+    let selectedChainProxies = [];
 
     const DEFAULT_EXPIRED_NODE = `trojan://00000000-0000-0000-0000-000000000000@127.0.0.1:443#${encodeURIComponent('您的订阅已失效')}`;
 
@@ -473,7 +540,8 @@ export async function handleMisubRequest(context) {
                 targetMisubs = [];
                 const relatedIds = [
                     ...(Array.isArray(profile.subscriptions) ? profile.subscriptions.map(item => typeof item === 'object' ? item.id : item) : []),
-                    ...(Array.isArray(profile.manualNodes) ? profile.manualNodes : [])
+                    ...(Array.isArray(profile.manualNodes) ? profile.manualNodes : []),
+                    ...(Array.isArray(profile.chainNodes) ? profile.chainNodes.map(item => typeof item === 'object' ? item.id : item) : [])
                 ].filter(Boolean);
                 const relatedSubs = typeof storageAdapter.getSubscriptionsByIds === 'function'
                     ? await storageAdapter.getSubscriptionsByIds(Array.from(new Set(relatedIds)))
@@ -507,6 +575,8 @@ export async function handleMisubRequest(context) {
                         }
                     });
                 }
+                targetMisubs = buildProfileTargetMisubs(profile, misubMap);
+                selectedChainProxies = resolveSelectedChainProxies(profile, relatedSubs);
             }
             // [新增] 增加订阅组下载计数
             // 仅在非回调请求时及非内部请求时增加计数(避免重复计数)
@@ -533,10 +603,12 @@ export async function handleMisubRequest(context) {
         if (!token || token !== config.mytoken) {
             return new Response('Invalid Token', { status: 403 });
         }
-        targetMisubs = allMisubs.filter(s => s.enabled);
+        targetMisubs = allMisubs.filter(s => s.enabled && !isChainProxyEntry(s));
+        selectedChainProxies = [];
     }
 
     // 使用统一的确定目标格式的方法（此方法中包含了处理各类客户端如 Surge 等对应版本的最新支持规则）
+    const selectedManualNodeCount = targetMisubs.filter(isManualNodeEntry).length;
     let targetFormat = determineTargetFormat(userAgentHeader, url.searchParams);
 
     // [Access Log] Record access log and stats if enabled
@@ -790,6 +862,8 @@ export async function handleMisubRequest(context) {
                     regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
                     customMatrixGroups: Array.isArray(config.customMatrixGroups) ? config.customMatrixGroups : [],
                     customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
+                    chainNodes: !isProfileExpired ? selectedChainProxies : [],
+                    chainInsertAfter: selectedManualNodeCount,
                     isMeta: isMetaCore(userAgentHeader, url.searchParams)
                 };
                 const rendered = await ProcessorService.renderOutput({
@@ -958,6 +1032,8 @@ export async function handleMisubRequest(context) {
         regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
         customMatrixGroups: Array.isArray(config.customMatrixGroups) ? config.customMatrixGroups : [],
         customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
+        chainNodes: !isProfileExpired ? selectedChainProxies : [],
+        chainInsertAfter: selectedManualNodeCount,
         isMeta: isMetaCore(userAgentHeader, url.searchParams)
     };
 

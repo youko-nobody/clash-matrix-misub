@@ -11,6 +11,7 @@ import { buildDedupPlan as buildDedupPlanCore } from './manual-nodes/dedup.js';
 import { buildAutoSortedSubscriptions } from './manual-nodes/sorting.js';
 import { collectManualNodeGroups, buildGroupedManualNodes, normalizeManualNodeGroupName } from './manual-nodes/groups.js';
 import { t } from '../i18n/index.js';
+import { splitSubscriptionItems, mergeSubscriptionItems } from './subscriptionKinds.js';
 
 export function useManualNodes(markDirty) {
   const { showToast } = useToastStore();
@@ -116,8 +117,13 @@ export function useManualNodes(markDirty) {
     if (!normalizedNode.name) {
       normalizedNode.name = extractNodeName(normalizedNode.url);
     }
-    // Add to shared store
-    dataStore.addSubscription(normalizedNode);
+    const { manualNodes: currentManualNodes, chainProxies, remoteSubscriptions, others } = splitSubscriptionItems(allSubscriptions.value || []);
+    dataStore.overwriteSubscriptions(mergeSubscriptionItems({
+      manualNodes: [normalizedNode, ...currentManualNodes],
+      chainProxies,
+      remoteSubscriptions,
+      others
+    }));
     manualNodesCurrentPage.value = 1;
     markDirty();
   }
@@ -163,12 +169,18 @@ export function useManualNodes(markDirty) {
 
   function addNodesFromBulk(nodes, groupName = '') {
     const normalizedGroupName = normalizeManualNodeGroupName(groupName);
-    // Reverse insert so they appear in correct order when unshifted
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const node = { ...nodes[i] };
+    const normalizedNodes = nodes.map(item => {
+      const node = { ...item };
       node.group = normalizeManualNodeGroupName(normalizedGroupName || node.group);
-      dataStore.addSubscription(node);
-    }
+      return node;
+    });
+    const { manualNodes: currentManualNodes, chainProxies, remoteSubscriptions, others } = splitSubscriptionItems(allSubscriptions.value || []);
+    dataStore.overwriteSubscriptions(mergeSubscriptionItems({
+      manualNodes: [...normalizedNodes, ...currentManualNodes],
+      chainProxies,
+      remoteSubscriptions,
+      others
+    }));
     markDirty();
   }
 
@@ -228,17 +240,15 @@ export function useManualNodes(markDirty) {
         })
       : reorderedVisibleNodes;
 
-    // 1. Get all Subscriptions (to preserve them)
-    const currentSubscriptions = (allSubscriptions.value || []).filter(item => item.url && /^https?:\/\//.test(item.url));
+    const { chainProxies, remoteSubscriptions, others } = splitSubscriptionItems(allSubscriptions.value || []);
+    const mergedList = mergeSubscriptionItems({
+      manualNodes: orderedManualNodes,
+      chainProxies,
+      remoteSubscriptions,
+      others
+    });
 
-    // 2. Combine Existing Subscriptions + New Ordered Manual Nodes
-    // Logic: Manual Nodes at top, Subscriptions at bottom
-    const mergedList = [...orderedManualNodes, ...currentSubscriptions];
-
-    // 3. Update Store
     dataStore.overwriteSubscriptions(mergedList);
-
-    // 4. Mark Dirty
     markDirty();
   }
 

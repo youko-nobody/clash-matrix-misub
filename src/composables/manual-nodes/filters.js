@@ -1,4 +1,4 @@
-import { NODE_PROTOCOL_REGEX } from '@/constants/nodeProtocols.js';
+export { isManualNodeEntry } from '../subscriptionKinds.js';
 
 export const countryCodeMap = {
   'hk': ['🇭🇰', '香港', 'HK'],
@@ -56,18 +56,6 @@ export const countryCodeMap = {
   'ie': ['🇮🇪', '爱尔兰', '愛爾蘭'],
   'nz': ['🇳🇿', '新西兰', '紐西蘭'],
 };
-
-export function isManualNodeEntry(item) {
-  if (!item.url) return false;
-  if (typeof item.url !== 'string') return false;
-
-  const trimmedUrl = item.url.trim();
-  if (!trimmedUrl) return false;
-
-  if (/^https?:\/\//i.test(trimmedUrl)) return false;
-
-  return NODE_PROTOCOL_REGEX.test(trimmedUrl);
-}
 
 export function filterManualNodes(nodes, searchTerm, activeColorFilter) {
   let filtered = nodes;

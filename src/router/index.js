@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 const DashboardView = () => import('../views/DashboardView.vue');
 const SubscriptionGroupsView = () => import('../views/SubscriptionGroupsView.vue');
 const ManualNodesView = () => import('../views/ManualNodesView.vue');
+const ChainProxyView = () => import('../views/ChainProxyView.vue');
 const MySubscriptionsView = () => import('../views/MySubscriptionsView.vue');
 const SettingsView = () => import('../views/SettingsView.vue');
 
@@ -39,6 +40,12 @@ const routes = [
         name: 'ManualNodes',
         component: ManualNodesView,
         meta: { title: '手动节点' }
+    },
+    {
+        path: '/dashboard/chain-proxy',
+        name: 'ChainProxy',
+        component: ChainProxyView,
+        meta: { title: '链式代理' }
     },
     {
         path: '/dashboard/subscriptions',

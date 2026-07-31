@@ -49,6 +49,7 @@ export function useProfiles(markDirty) {
       enabled: true, 
       subscriptions: [], 
       manualNodes: [], 
+      chainNodes: [],
       customId: '', 
       transformConfigMode: 'global', 
       transformConfig: '', 
@@ -73,6 +74,9 @@ export function useProfiles(markDirty) {
       editingProfile.value.expiresAt = profile.expiresAt || '';
       if (!Array.isArray(editingProfile.value.operators)) {
         editingProfile.value.operators = [];
+      }
+      if (!Array.isArray(editingProfile.value.chainNodes)) {
+        editingProfile.value.chainNodes = [];
       }
       showProfileModal.value = true;
     }

@@ -4,7 +4,7 @@
 
 一个运行在 Cloudflare Pages 上的订阅管理、节点解析与 Matrix 分流配置生成面板。
 
-[![Version](https://img.shields.io/badge/version-v5.8.0-2563eb?style=for-the-badge)](#v580-更新重点)
+[![Version](https://img.shields.io/badge/version-v5.9.0-2563eb?style=for-the-badge)](#v590-更新重点)
 [![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-f97316?style=for-the-badge)](#部署到-cloudflare-pages)
 [![License](https://img.shields.io/badge/license-MIT-16a34a?style=for-the-badge)](LICENSE)
 
@@ -24,24 +24,26 @@
 > [!IMPORTANT]
 > 本仓库只包含程序代码和内置模板，不包含真实节点、机场订阅、账号、密码、Token 或私人规则。
 
-## v5.8.0 更新重点
+## v5.9.0 更新重点
 
 | 类型 | 内容 |
 | --- | --- |
-| Bug 修复 | 修复部分机场订阅里的传统 Shadowsocks 节点无法识别、不会进入导出配置的问题。 |
-| 解析策略 | 移除静态 SS 加密算法白名单。只要 SS 链接能解析，就先保留节点，最终是否可用交给客户端内核判断。 |
-| 覆盖场景 | 已覆盖原始订阅文本、整份 Base64 订阅、`aes-256-cfb`、`rc4-md5`、`aes-256-gcm` 等场景。 |
-| 保留能力 | SS2022 的必要校验和自动修复逻辑仍然保留。 |
-| 首页体验 | GitHub 首页、公开订阅页、项目仓库链接和版本检查信息统一更新。 |
+| 新增功能 | 新增“链式代理”独立页面，可以把任意候选节点组合成 `中转节点 -> 落地节点` 的链式节点。 |
+| 导出顺序 | 订阅组导出顺序固定为：手动节点 -> 链式代理 -> 机场订阅，原始节点继续保留。 |
+| 排序能力 | 链式代理支持单独排序，订阅组里选择的链式代理也可以排序。 |
+| 稳定修复 | 预览和导出只把真实代理协议识别为手动节点，避免 `HTTP 503` 等上游错误文本混进候选节点。 |
+| UI 优化 | 链式代理页面改成与 MiSub 本体一致的紧凑工具栏和卡片布局，移除占空间的大看板。 |
+| 兼容策略 | Clash / Mihomo / Meta 兼容输出会生成带 `dialer-proxy` 的链式节点，旧 Clash 内核会自动跳过。 |
 
-这次修复主要针对下面这类问题：
+链式代理适合下面这类场景：
 
 ```text
-机场订阅里明明有 ss:// 节点
-但是导出的 Clash / Mihomo 配置里没有出现
+本机 -> 中转节点 -> 落地节点 -> 目标网站
 ```
 
-现在的处理方式更稳：解析器只负责把节点正确读出来，不在解析阶段提前丢弃传统 SS 节点。
+你可以保留原始节点，同时额外生成链式节点。需要哪条链路，在客户端里手动选择即可。
+
+> v5.8.0 中针对传统 Shadowsocks 节点识别的修复仍然保留：解析器不会在解析阶段提前丢弃可解析的 SS 节点。
 
 ## 功能说明
 
@@ -50,6 +52,7 @@
 | 订阅管理 | 添加、编辑、刷新机场订阅源。 |
 | 手动节点 | 粘贴单条或多行节点链接，和机场订阅一起合并输出。 |
 | 订阅组 Profile | 把多个订阅源、手动节点、自定义规则组合成一个公开订阅入口。 |
+| 链式代理 | 手动选择中转节点和落地节点，额外生成带 `dialer-proxy` 的链式节点。 |
 | 节点解析 | 支持 SS / SS2022、VMess、VLESS、Trojan、HY2、TUIC、Snell、WireGuard、AnyTLS、HTTP、SOCKS5 等协议。 |
 | 兼容增强 | 支持 SS SIP002、整份 Base64 订阅、URL 编码 Base64、VLESS IPv6、Reality、Shadowrocket 风格 VLESS 链接。 |
 | Fetch Proxy | 用专属拉取代理处理部分机场屏蔽 Cloudflare 拉取订阅的问题。 |
@@ -135,10 +138,11 @@ Cloudflare Pages 构建参数：
 2. 使用 `ADMIN_PASSWORD` 登录管理后台。
 3. 在“我的订阅”添加机场订阅链接。
 4. 在“手动节点”粘贴单条或多行节点链接。
-5. 在“订阅组 Profile”里选择需要组合的订阅源和手动节点。
-6. 根据需要选择 `Matrix 分流`，或使用默认规则。
-7. 复制生成的公开订阅链接。
-8. 导入 Clash Verge、Mihomo Party、Stash、FlClash 等客户端。
+5. 如需链式代理，在“链式代理”里选择中转节点和落地节点，并保存。
+6. 在“订阅组 Profile”里选择需要组合的订阅源、手动节点和链式代理。
+7. 根据需要选择 `Matrix 分流`，或使用默认规则。
+8. 复制生成的公开订阅链接。
+9. 导入 Clash Verge、Mihomo Party、Stash、FlClash 等客户端。
 
 如果某些客户端对 Reality、WebSocket TLS 或 IPv6 参数更严格，可以先用节点预览检查最终 YAML，再按客户端兼容性微调。
 
@@ -208,4 +212,4 @@ npm run test:run
 - [迁移说明](CLASH_MATRIX_MIGRATION.md)
 - [第三方声明](THIRD_PARTY_NOTICES.md)
 
-当前版本：`v5.8.0`
+当前版本：`v5.9.0`

@@ -44,7 +44,7 @@ const highlights = computed(() => [
           {{ t('publicProfiles.releaseDescription') }}
         </p>
       </div>
-      <span class="font-mono text-xs text-gray-500 dark:text-gray-400">v5.8.0</span>
+      <span class="font-mono text-xs text-gray-500 dark:text-gray-400">v5.9.0</span>
     </div>
 
     <div class="mt-5 grid grid-cols-1 divide-y divide-gray-200/80 dark:divide-white/10 md:grid-cols-3 md:divide-x md:divide-y-0">

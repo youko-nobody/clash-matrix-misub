@@ -6,6 +6,7 @@ import ProfilePanel from '../components/profiles/ProfilePanel.vue';
 import Modal from '../components/forms/Modal.vue';
 import { storeToRefs } from 'pinia';
 import { useManualNodes } from '../composables/useManualNodes.js';
+import { useChainProxies } from '../composables/useChainProxies.js';
 import { useToastStore } from '../stores/toast.js';
 import { useI18n } from '../i18n/index.js';
 
@@ -26,6 +27,7 @@ const {
 // For ProfileModal need access to all subscriptions and nodes
 const { subscriptions } = storeToRefs(dataStore);
 const { manualNodes } = useManualNodes(markDirty);
+const { chainProxies } = useChainProxies(markDirty);
 
 const handleProfileReorder = (profileId, direction) => {
   const fromIndex = profiles.value.findIndex(profile => profile.id === profileId || profile.customId === profileId);
@@ -122,6 +124,7 @@ const handleQRCode = (profileId) => {
 
     <ProfileModal v-if="showProfileModal" v-model:show="showProfileModal" :profile="editingProfile"
       :is-new="isNewProfile" :all-subscriptions="subscriptions" :all-manual-nodes="manualNodes"
+      :all-chain-proxies="chainProxies"
       @save="handleSaveProfile" size="6xl" />
 
     <Modal v-model:show="showDeleteProfilesModal" @confirm="handleDeleteAllProfiles">

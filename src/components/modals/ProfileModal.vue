@@ -4,6 +4,7 @@ import Modal from '../forms/Modal.vue';
 import ProfileForm from './ProfileModal/ProfileForm.vue';
 import SubscriptionSelector from './ProfileModal/SubscriptionSelector.vue';
 import NodeSelector from './ProfileModal/NodeSelector.vue';
+import ChainProxySelector from './ProfileModal/ChainProxySelector.vue';
 import { useManualNodes } from '../../composables/useManualNodes.js';
 import { useDataStore } from '../../stores/useDataStore.js';
 import { useSettingsStore } from '../../stores/settings.js';
@@ -20,6 +21,10 @@ const props = defineProps({
   isNew: Boolean,
   allSubscriptions: Array,
   allManualNodes: Array,
+  allChainProxies: {
+    type: Array,
+    default: () => []
+  },
 });
 
 const emit = defineEmits(['update:show', 'save']);
@@ -27,6 +32,7 @@ const emit = defineEmits(['update:show', 'save']);
 const localProfile = ref({});
 const subscriptionSearchTerm = ref('');
 const nodeSearchTerm = ref('');
+const chainSearchTerm = ref('');
 const activeManualNodeGroupFilter = ref(null);
 const showAdvanced = ref(false);
 const uiText = computed(() => ({
@@ -170,6 +176,23 @@ const filteredManualNodes = computed(() => {
   });
 });
 
+const filteredChainProxies = computed(() => {
+  const items = props.allChainProxies || [];
+
+  if (!chainSearchTerm.value) {
+    return items;
+  }
+
+  const keyword = chainSearchTerm.value.toLowerCase().trim();
+  return items.filter(item => {
+    return [
+      item.name,
+      item.frontName,
+      item.backName
+    ].some(value => String(value || '').toLowerCase().includes(keyword));
+  });
+});
+
 watch(() => props.profile, (newProfile) => {
   if (newProfile) {
     const profileCopy = JSON.parse(JSON.stringify(newProfile));
@@ -221,6 +244,7 @@ watch(() => props.profile, (newProfile) => {
 
     // 确保 operators 数组存在
     profileCopy.operators = Array.isArray(profileCopy.operators) ? profileCopy.operators : [];
+    profileCopy.chainNodes = Array.isArray(profileCopy.chainNodes) ? profileCopy.chainNodes : [];
     
     localProfile.value = profileCopy;
   } else {
@@ -233,6 +257,7 @@ watch(() => props.profile, (newProfile) => {
       expiresAt: '',
       isPublic: true,
       description: '',
+      chainNodes: [],
       prefixSettings: {
         enableManualNodes: null,
         enableSubscriptions: null,
@@ -259,10 +284,16 @@ const handleConfirm = () => {
     }
   }
   // 顺序已由用户通过拖拽确定，无需额外排序
+  profileToSave.chainNodes = Array.isArray(profileToSave.chainNodes)
+    ? profileToSave.chainNodes.map(item => item && typeof item === 'object' ? item.id : item).filter(Boolean)
+    : [];
   emit('save', profileToSave);
 };
 
 const toggleSelection = (listName, id) => {
+  if (!Array.isArray(localProfile.value[listName])) {
+    localProfile.value[listName] = [];
+  }
   const list = localProfile.value[listName];
   const index = list.indexOf(id);
   if (index > -1) {
@@ -273,12 +304,18 @@ const toggleSelection = (listName, id) => {
 };
 
 const handleSelectAll = (listName, sourceArray) => {
+  if (!Array.isArray(localProfile.value[listName])) {
+    localProfile.value[listName] = [];
+  }
   const currentSelection = new Set(localProfile.value[listName]);
   sourceArray.forEach(item => currentSelection.add(item.id));
   localProfile.value[listName] = Array.from(currentSelection);
 };
 
 const handleDeselectAll = (listName, sourceArray) => {
+  if (!Array.isArray(localProfile.value[listName])) {
+    localProfile.value[listName] = [];
+  }
   const sourceIds = sourceArray.map(item => item.id);
   localProfile.value[listName] = localProfile.value[listName].filter(id => !sourceIds.includes(id));
 };
@@ -322,7 +359,7 @@ const updateSelectedIds = (listName, newIds) => {
           @toggle-advanced="showAdvanced = !showAdvanced" 
         />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
           <SubscriptionSelector :subscriptions="allSubscriptions" :filtered-subscriptions="filteredSubscriptions"
             :search-term="subscriptionSearchTerm" :selected-ids="localProfile.subscriptions || []"
@@ -340,6 +377,14 @@ const updateSelectedIds = (listName, newIds) => {
             @toggle-selection="toggleSelection('manualNodes', $event)"
             @select-all="handleSelectAll('manualNodes', filteredManualNodes)"
             @deselect-all="handleDeselectAll('manualNodes', filteredManualNodes)" />
+
+          <ChainProxySelector :chain-proxies="allChainProxies" :filtered-chain-proxies="filteredChainProxies"
+            :search-term="chainSearchTerm" :selected-ids="localProfile.chainNodes || []"
+            @update:search-term="chainSearchTerm = $event"
+            @update:selected-ids="updateSelectedIds('chainNodes', $event)"
+            @toggle-selection="toggleSelection('chainNodes', $event)"
+            @select-all="handleSelectAll('chainNodes', filteredChainProxies)"
+            @deselect-all="handleDeselectAll('chainNodes', filteredChainProxies)" />
         </div>
 
       </div>

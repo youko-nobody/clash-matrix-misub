@@ -282,11 +282,11 @@
 }
 
 .nav-tab-shell {
-  @apply flex items-center gap-1;
+  @apply flex items-center gap-0.5 lg:gap-1;
 }
 
 .nav-tab {
-  @apply relative inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-150;
+  @apply relative inline-flex items-center gap-1.5 px-2.5 py-2 rounded-full text-xs font-medium transition-colors duration-150 lg:gap-2 lg:px-3.5 lg:text-sm;
 }
 
 .nav-tab-active {

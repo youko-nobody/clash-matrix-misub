@@ -20,6 +20,9 @@ function normalizeProfile(profile = {}) {
     const normalized = { ...profile };
     normalized.subscriptions = Array.isArray(profile.subscriptions) ? profile.subscriptions : [];
     normalized.manualNodes = Array.isArray(profile.manualNodes) ? profile.manualNodes : [];
+    normalized.chainNodes = Array.isArray(profile.chainNodes)
+        ? profile.chainNodes.map(item => item && typeof item === 'object' ? item.id : item).filter(Boolean)
+        : [];
     normalized.enabled = profile.enabled !== false;
     normalized.isPublic = profile.isPublic === true;
     normalized.downloadCount = Number(profile.downloadCount) || 0;

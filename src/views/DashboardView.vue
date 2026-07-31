@@ -9,6 +9,7 @@ import { useSubscriptions } from '../composables/useSubscriptions.js';
 import { useRouter } from 'vue-router';
 import { useProfiles } from '../composables/useProfiles.js';
 import { useManualNodes } from '../composables/useManualNodes.js';
+import { useChainProxies } from '../composables/useChainProxies.js';
 import { formatBytes } from '../lib/utils.js';
 import StatCards from '../components/features/Dashboard/StatCards.vue';
 import { getDashboardHealthItems, shouldShowFullGuide } from '../utils/dashboard-health.js';
@@ -28,6 +29,7 @@ const {
 } = useSubscriptions(markDirty);
 
 const { manualNodes, addNodesFromBulk } = useManualNodes(markDirty);
+const { chainProxies } = useChainProxies(markDirty);
 
 const router = useRouter();
 
@@ -306,6 +308,7 @@ const handleQRCode = (url, title) => {
         :is-new="isNewProfile"
         :all-subscriptions="subscriptions"
         :all-manual-nodes="manualNodes"
+        :all-chain-proxies="chainProxies"
         @save="handleSaveProfile"
         size="2xl"
       />

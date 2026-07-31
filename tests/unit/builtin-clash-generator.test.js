@@ -85,8 +85,11 @@ describe('Clash 内置生成器', () => {
         const usGroup = fullConfig['proxy-groups'].find(group => group.name === '🇺🇸 美国节点');
         const sgGroup = fullConfig['proxy-groups'].find(group => group.name === '🇸🇬 狮城节点');
 
-        expect(usGroup.proxies).toContain('🇸🇬 机场A 新加坡 原生');
-        expect(usGroup.proxies).toContain('🇺🇸 机场A US-West');
+        expect(usGroup.proxies).toEqual(expect.arrayContaining([
+            '⚡️ 🇺🇸 美国 - 自动测速',
+            '机场A 新加坡 原生',
+            '机场A US-West'
+        ]));
         expect(sgGroup).toBeUndefined();
     });
     it('renders Matrix url-test options as Clash top-level group fields', () => {
@@ -118,5 +121,63 @@ describe('Clash 内置生成器', () => {
         expect(groups.get('BANK')?.icon).toContain('/PayPal.png');
         expect(groups.get('FINANCE')?.icon).toContain('/PayPal.png');
         expect(groups.has('🚀 PROXY')).toBe(false);
+    });
+
+    it('应在 Mihomo 模式额外生成手动链式节点且保留原始节点', () => {
+        const nodes = [
+            'ss://YWVzLTEyOC1nY206ZnJvbnQtcGFzcw==@front.example.com:8388#FrontNode',
+            'trojan://back-pass@back.example.com:443#BackNode'
+        ].join('\n');
+
+        const legacyClash = yaml.load(generateBuiltinClashConfig(nodes, {
+            ruleLevel: 'matrix',
+            chainNodes: [{ enabled: true, frontName: 'FrontNode', backName: 'BackNode' }]
+        }));
+        expect(legacyClash.proxies.map(proxy => proxy.name)).toEqual(['FrontNode', 'BackNode']);
+
+        const parsed = yaml.load(generateBuiltinClashConfig(nodes, {
+            ruleLevel: 'matrix',
+            isMeta: true,
+            chainNodes: [{ enabled: true, name: '链式 | Front -> Back', frontName: 'FrontNode', backName: 'BackNode' }]
+        }));
+        const proxies = new Map(parsed.proxies.map(proxy => [proxy.name, proxy]));
+
+        expect(proxies.has('FrontNode')).toBe(true);
+        expect(proxies.has('BackNode')).toBe(true);
+        expect(proxies.get('链式 | Front -> Back')).toMatchObject({
+            type: 'trojan',
+            server: 'back.example.com',
+            'dialer-proxy': 'FrontNode'
+        });
+
+        const proxyGroup = parsed['proxy-groups'].find(group => group.name === 'PROXY');
+        const autoGroup = parsed['proxy-groups'].find(group => group.name === '♻️ 自动测速');
+        expect(proxyGroup.proxies).toContain('链式 | Front -> Back');
+        expect(autoGroup.proxies).toContain('链式 | Front -> Back');
+    });
+    it('should insert chain proxies between manual nodes and airport subscription nodes', () => {
+        const nodes = [
+            'ss://YWVzLTEyOC1nY206ZnJvbnQtcGFzcw==@front.example.com:8388#ManualFront',
+            'trojan://back-pass@back.example.com:443#AirportBack',
+            'ss://YWVzLTEyOC1nY206YWlycG9ydC1wYXNz@airport.example.com:8388#AirportExtra'
+        ].join('\n');
+
+        const parsed = yaml.load(generateBuiltinClashConfig(nodes, {
+            ruleLevel: 'matrix',
+            isMeta: true,
+            chainInsertAfter: 1,
+            chainNodes: [{ enabled: true, name: 'Chain ManualFront -> AirportBack', frontName: 'ManualFront', backName: 'AirportBack' }]
+        }));
+
+        expect(parsed.proxies.map(proxy => proxy.name)).toEqual([
+            'ManualFront',
+            'Chain ManualFront -> AirportBack',
+            'AirportBack',
+            'AirportExtra'
+        ]);
+        expect(parsed.proxies[1]).toMatchObject({
+            server: 'back.example.com',
+            'dialer-proxy': 'ManualFront'
+        });
     });
 });

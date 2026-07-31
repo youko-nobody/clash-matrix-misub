@@ -371,7 +371,7 @@ onUnmounted(() => {
                             <span>Clash Matrix Studio</span>
                             <span class="h-1 w-1 rounded-full bg-current opacity-60"></span>
                             <span>{{ t('publicProfiles.badge') }}</span>
-                            <span class="font-mono text-gray-500 dark:text-gray-400">v5.8.0</span>
+                            <span class="font-mono text-gray-500 dark:text-gray-400">v5.9.0</span>
                         </div>
 
                         <div v-if="isInitialLoading" class="mt-5 max-w-3xl space-y-3 animate-pulse">

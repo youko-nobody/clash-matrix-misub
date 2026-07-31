@@ -144,6 +144,76 @@ function applyMihomoRelayDialerProxy(proxies, publicProxies, proxyGroups) {
     };
 }
 
+function getChainEndpointName(rule, keys = []) {
+    for (const key of keys) {
+        const value = rule?.[key];
+        if (typeof value === 'string' && value.trim()) {
+            return cleanControlChars(value.trim());
+        }
+    }
+    return '';
+}
+
+export function appendManualChainProxies(proxies, chainNodes = [], insertIndex = proxies.length) {
+    if (!Array.isArray(chainNodes) || chainNodes.length === 0) return proxies;
+
+    const proxiesByName = new Map();
+    const usedNames = new Map();
+    proxies.forEach(proxy => {
+        if (!proxy?.name) return;
+        proxiesByName.set(proxy.name, proxy);
+        usedNames.set(proxy.name, (usedNames.get(proxy.name) || 0) + 1);
+    });
+
+    const generated = [];
+
+    chainNodes.forEach(rule => {
+        if (!rule || rule.enabled === false) return;
+
+        const frontName = getChainEndpointName(rule, ['frontName', 'front', 'entryNodeName', 'entry', 'dialerProxy']);
+        const backName = getChainEndpointName(rule, ['backName', 'back', 'exitNodeName', 'exit', 'targetNodeName']);
+        if (!frontName || !backName || frontName === backName) return;
+
+        const frontProxy = proxiesByName.get(frontName);
+        const backProxy = proxiesByName.get(backName);
+        if (!frontProxy || !backProxy) return;
+
+        // Avoid nested chains and accidental loops in the first implementation.
+        if (frontProxy.metadata?.isChainNode || backProxy.metadata?.isChainNode || backProxy['dialer-proxy']) return;
+
+        const rawName = typeof rule.name === 'string' && rule.name.trim()
+            ? rule.name.trim()
+            : `链式 | ${frontProxy.name} -> ${backProxy.name}`;
+        const uniqueName = getUniqueName(cleanControlChars(rawName), usedNames);
+        const chainProxy = {
+            ...backProxy,
+            name: uniqueName,
+            'dialer-proxy': frontProxy.name,
+            metadata: {
+                ...(backProxy.metadata || {}),
+                isChainNode: true,
+                chainFrontName: frontProxy.name,
+                chainBackName: backProxy.name
+            }
+        };
+
+        proxiesByName.set(uniqueName, chainProxy);
+        generated.push(chainProxy);
+    });
+
+    if (generated.length === 0) return proxies;
+
+    const safeInsertIndex = Number.isFinite(insertIndex)
+        ? Math.max(0, Math.min(proxies.length, Math.trunc(insertIndex)))
+        : proxies.length;
+
+    return [
+        ...proxies.slice(0, safeInsertIndex),
+        ...generated,
+        ...proxies.slice(safeInsertIndex)
+    ];
+}
+
 /**
  * 生成内置 Clash 配置
  * @param {string} nodeList - 节点列表（换行分隔的 URL）
@@ -181,6 +251,10 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
     
     // 处理重名节点
     deduplicateNames(proxies);
+    const levelKey = (ruleLevel || 'std').toUpperCase();
+    if (enableMihomoSyntax && !isHiddifyClient && levelKey !== 'RELAY') {
+        proxies = appendManualChainProxies(proxies, options.chainNodes, options.chainInsertAfter);
+    }
 
     if (proxies.length === 0) {
         return '# No valid proxies found\nproxies: []\n';
@@ -188,7 +262,6 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
 
     // 生成 YAML
     try {
-        const levelKey = (ruleLevel || 'std').toUpperCase();
         const rawRules = isHiddifyClient
             ? ['MATCH,🚀 节点选择']
             : getBuiltinRules(levelKey, 'clash', options);

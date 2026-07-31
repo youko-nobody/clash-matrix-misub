@@ -8,6 +8,7 @@ import { renderQuanxFromTemplateModel } from './template-renderers/render-quanx.
 import { renderEgernFromTemplateModel } from './template-renderers/render-egern.js';
 import { urlsToClashProxies } from '../../utils/url-to-clash.js';
 import { getUniqueName } from './name-utils.js';
+import { appendManualChainProxies } from './builtin-clash-generator.js';
 
 /**
  * 处理重名节点，确保每个节点名称唯一
@@ -31,10 +32,13 @@ export function renderClashFromIniTemplate(templateText, options = {}) {
         .filter(line => line && !line.startsWith('#'));
     const proxies = Array.isArray(options.proxies) ? options.proxies : urlsToClashProxies(proxyUrls, options);
     deduplicateNames(proxies);
+    const finalProxies = options.isMeta && Array.isArray(options.chainNodes) && options.chainNodes.length > 0
+        ? appendManualChainProxies(proxies, options.chainNodes, options.chainInsertAfter)
+        : proxies;
     
     let model = parseIniTemplate(templateText, {
         ...options,
-        proxies
+        proxies: finalProxies
     });
 
     // 智能注入地区分组逻辑

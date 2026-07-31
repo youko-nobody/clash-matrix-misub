@@ -169,6 +169,7 @@ export const DEFAULT_PROFILE_FORM = {
     subscriptions: [],
     manualNodes: [],
     enabled: true,
+    chainNodes: [],
 prefixSettings: {
 enableManualNodes: false,
 enableSubscriptions: true,

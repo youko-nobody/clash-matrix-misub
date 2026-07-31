@@ -10,11 +10,11 @@ export const useVersionStore = defineStore('version', () => {
     const showUpdateNotice = ref(false);
     const upstreamRepo = 'youko-nobody/clash-matrix-misub';
 
-    const localChangelog = `Clash Matrix Studio v5.8.0
-- 修复机场订阅中的传统 Shadowsocks 节点被静态算法白名单过滤的问题。
-- 原始订阅和整份 Base64 订阅都会保留可解析的 SS 节点，客户端是否支持旧算法仍由对应内核决定。
-- 保留 SS2022 的必要校验和自动修复逻辑。
-- 公开首页调整为更清晰的订阅入口，并加入版本更新说明。`;
+    const localChangelog = `Clash Matrix Studio v5.9.0
+- 新增链式代理页面，可手动组合中转节点和落地节点，导出带 dialer-proxy 的链式节点。
+- 订阅组导出顺序调整为：手动节点 -> 链式代理 -> 机场订阅，链式代理支持排序。
+- 修复 HTTP 503 等上游错误文本被误识别为候选节点的问题。
+- 链式代理页面改为与 MiSub 本体一致的紧凑工具栏和卡片布局。`;
 
     const hasUpdate = computed(() => {
         if (!latestRelease.value?.tag_name) return false;

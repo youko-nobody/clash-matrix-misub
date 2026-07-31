@@ -74,4 +74,39 @@ describe('handleProfileMode preview transforms', () => {
     expect(result.nodes[0].name).toBe('Renamed Node');
     expect(result.nodes[0].url).toContain('#Renamed%20Node');
   });
+
+  it('ignores non-proxy manual entries in profile preview', async () => {
+    createAdapter.mockReturnValue({
+      getProfileById: vi.fn().mockResolvedValue({
+        id: 'profile-1',
+        enabled: true,
+        subscriptions: [],
+        manualNodes: ['bad-node', 'good-node']
+      }),
+      getSubscriptionsByIds: vi.fn().mockResolvedValue([
+        {
+          id: 'bad-node',
+          enabled: true,
+          url: 'HTTP 503',
+          name: 'HTTP 503'
+        },
+        {
+          id: 'good-node',
+          enabled: true,
+          url: 'trojan://password@example.com:443#Good%20Node',
+          name: 'Good Node'
+        }
+      ]),
+      get: vi.fn().mockResolvedValue({ defaultOperators: [] })
+    });
+
+    const { handleProfileMode } = await import('../../functions/modules/subscription/profile-handler.js');
+    const result = await handleProfileMode(new Request('https://example.com/api/subscription_nodes'), {}, 'profile-1', 'MiSub-Test/1.0', false, false);
+
+    expect(result.success).toBe(true);
+    expect(result.nodes).toHaveLength(1);
+    expect(result.nodes[0].name).toBe('Good Node');
+    expect(result.nodes[0].url).toContain('trojan://');
+    expect(fetchSubscriptionNodes).not.toHaveBeenCalled();
+  });
 });

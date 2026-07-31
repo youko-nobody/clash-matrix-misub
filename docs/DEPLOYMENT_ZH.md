@@ -24,6 +24,7 @@
 - 移除 `privacy-protection-tools/anti-AD` 和 `REIJI007/AdBlock_Rule_For_Clash` 两个超大规则集，避免 Stash 等客户端导入后因规则过大退出代理。
 - 保留较轻量的广告、HTTPDNS、DNS 劫持和隐私修复规则。
 - 强化节点解析：SS SIP002、URL 编码 Base64、VLESS IPv6、VLESS Reality、Shadowrocket 风格 VLESS 链接等。
+- 新增链式代理：可以在管理界面选择中转节点和落地节点，额外生成 `dialer-proxy` 链式节点，并在订阅组里排序选择。
 - Stash 一键导入会强制使用 Clash YAML 链接，避免被当作普通 Base64 节点订阅。
 - Fetch Proxy 支持自定义 User-Agent，部分机场必须指定 UA 才能拉取订阅。
 - Matrix 输出默认加入更稳的 Clash/Mihomo 基础项，例如 `allow-lan: false`、`ipv6: false`、`unified-delay: true`、`tcp-concurrent: true`。

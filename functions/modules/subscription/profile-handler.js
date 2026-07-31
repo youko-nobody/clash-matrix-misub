@@ -4,6 +4,7 @@ import { parseNodeInfo } from '../utils/geo-utils.js';
 import { calculateProtocolStats, calculateRegionStats } from '../utils/node-parser.js';
 import { applyNodeTransformPipeline } from '../../utils/node-transformer.js';
 import { runOperatorChain } from '../../utils/operator-runner.js';
+import { NODE_PROTOCOL_REGEX } from '../../utils/node-utils.js';
 import { KV_KEY_SUBS, KV_KEY_PROFILES, KV_KEY_SETTINGS, DEFAULT_SETTINGS } from '../config.js';
 import { fetchSubscriptionNodes } from './node-fetcher.js';
 import { applyManualNodeName } from '../utils/node-cleaner.js';
@@ -20,6 +21,28 @@ function ensureArray(data) {
         }
     }
     return [];
+}
+
+function isChainProxyEntry(item) {
+    return item?.isChainProxy === true || item?.type === 'chain';
+}
+
+function getItemUrl(item) {
+    return typeof item?.url === 'string' ? item.url.trim() : '';
+}
+
+function isRemoteSubscriptionEntry(item) {
+    const url = getItemUrl(item);
+    return /^https?:\/\//i.test(url) && !isChainProxyEntry(item);
+}
+
+function isManualNodeEntry(item) {
+    const url = getItemUrl(item);
+    return Boolean(url) && !/^https?:\/\//i.test(url) && !isChainProxyEntry(item) && NODE_PROTOCOL_REGEX.test(url);
+}
+
+function getProfileItemId(item) {
+    return item && typeof item === 'object' ? item.id : item;
 }
 
 function adaptLegacyTransform(config) {
@@ -106,7 +129,7 @@ export async function handleProfileMode(request, env, profileId, userAgent, appl
         : await storageAdapter.get(KV_KEY_SUBS) || [];
     const misubMap = new Map(relatedSubs.map(item => [item.id, item]));
 
-    const targetMisubs = [];
+    let targetMisubs = [];
 
     // 1. Add subscriptions in order defined by profile
     const profileSubIds = profile.subscriptions || [];
@@ -131,8 +154,21 @@ export async function handleProfileMode(request, env, profileId, userAgent, appl
     }
 
     // 分离HTTP订阅和手工节点
-    const targetSubscriptions = targetMisubs.filter(item => item.url.startsWith('http'));
-    const targetManualNodes = targetMisubs.filter(item => !item.url.startsWith('http'));
+    const orderedManualMisubs = (Array.isArray(profile.manualNodes) ? profile.manualNodes : [])
+        .map(id => misubMap.get(id))
+        .filter(item => item && item.enabled && isManualNodeEntry(item));
+    const orderedRemoteMisubs = (Array.isArray(profile.subscriptions) ? profile.subscriptions : [])
+        .map(item => {
+            const id = getProfileItemId(item);
+            const sub = misubMap.get(id);
+            if (!sub || !sub.enabled || !isRemoteSubscriptionEntry(sub)) return null;
+            return item && typeof item === 'object' ? { ...sub, ...item } : sub;
+        })
+        .filter(Boolean);
+    targetMisubs = [...orderedManualMisubs, ...orderedRemoteMisubs];
+
+    const targetSubscriptions = targetMisubs.filter(isRemoteSubscriptionEntry);
+    const targetManualNodes = targetMisubs.filter(isManualNodeEntry);
 
     // 处理手工节点（直接解析节点URL）
     // 先将用户自定义名称写入 URL（与订阅生成流程保持一致），
@@ -164,7 +200,7 @@ export async function handleProfileMode(request, env, profileId, userAgent, appl
     );
 
     // 合并所有结果
-    const allResults = [...subscriptionResults, ...manualNodeResults];
+    const allResults = [...manualNodeResults, ...subscriptionResults];
 
     // 统计所有节点
     const allNodes = [];

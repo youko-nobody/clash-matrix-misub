@@ -340,6 +340,32 @@ export const useDataStore = defineStore('data', () => {
         }
     }
 
+    function removeChainProxyFromProfiles(chainIds) {
+        const idsToRemove = Array.isArray(chainIds) ? new Set(chainIds) : new Set([chainIds]);
+        if (idsToRemove.size === 0) return;
+
+        let modified = false;
+        profiles.value.forEach(profile => {
+            if (Array.isArray(profile.chainNodes) && profile.chainNodes.length > 0) {
+                const originalLength = profile.chainNodes.length;
+                profile.chainNodes = profile.chainNodes.filter(item => {
+                    const id = item && typeof item === 'object' ? item.id : item;
+                    return !idsToRemove.has(id);
+                });
+                if (profile.chainNodes.length !== originalLength) {
+                    modified = true;
+                }
+            }
+        });
+
+        if (modified) {
+            profiles.value = [...profiles.value];
+            if (isDev) {
+                console.debug('[DataStore] Cleaned up chain proxy references from profiles');
+            }
+        }
+    }
+
     /**
      * 数据自愈：清理订阅组中不存在的节点/订阅引用
      * 同时处理可能存在的重复 ID
@@ -347,8 +373,25 @@ export const useDataStore = defineStore('data', () => {
     function pruneInvalidReferences() {
         if (!profiles.value || profiles.value.length === 0) return;
 
-        // 收集所有当前存在的订阅和手动节点 ID
-        const validIds = new Set(subscriptions.value.map(item => item.id));
+        // 收集所有当前存在的三类来源 ID
+        const validSubscriptionIds = new Set(
+            subscriptions.value
+                .filter(item => typeof item?.url === 'string' && /^https?:\/\//i.test(item.url.trim()))
+                .map(item => item.id)
+        );
+        const validManualIds = new Set(
+            subscriptions.value
+                .filter(item => {
+                    const url = typeof item?.url === 'string' ? item.url.trim() : '';
+                    return url && !/^https?:\/\//i.test(url) && item?.isChainProxy !== true && item?.type !== 'chain';
+                })
+                .map(item => item.id)
+        );
+        const validChainIds = new Set(
+            subscriptions.value
+                .filter(item => item?.isChainProxy === true || item?.type === 'chain')
+                .map(item => item.id)
+        );
         
         let modified = false;
         profiles.value.forEach(profile => {
@@ -358,7 +401,7 @@ export const useDataStore = defineStore('data', () => {
                 const seenIds = new Set();
                 profile.manualNodes = profile.manualNodes.filter(id => {
                     // ID 必须存在且未被重复记录
-                    if (validIds.has(id) && !seenIds.has(id)) {
+                    if (validManualIds.has(id) && !seenIds.has(id)) {
                         seenIds.add(id);
                         return true;
                     }
@@ -374,13 +417,31 @@ export const useDataStore = defineStore('data', () => {
                 const originalLength = profile.subscriptions.length;
                 const seenIds = new Set();
                 profile.subscriptions = profile.subscriptions.filter(id => {
-                    if (validIds.has(id) && !seenIds.has(id)) {
-                        seenIds.add(id);
+                    const realId = id && typeof id === 'object' ? id.id : id;
+                    if (validSubscriptionIds.has(realId) && !seenIds.has(realId)) {
+                        seenIds.add(realId);
                         return true;
                     }
                     return false;
                 });
                 if (profile.subscriptions.length !== originalLength) {
+                    modified = true;
+                }
+            }
+
+            // 3. 处理链式代理引用
+            if (Array.isArray(profile.chainNodes) && profile.chainNodes.length > 0) {
+                const originalLength = profile.chainNodes.length;
+                const seenIds = new Set();
+                profile.chainNodes = profile.chainNodes.filter(item => {
+                    const id = item && typeof item === 'object' ? item.id : item;
+                    if (validChainIds.has(id) && !seenIds.has(id)) {
+                        seenIds.add(id);
+                        return true;
+                    }
+                    return false;
+                });
+                if (profile.chainNodes.length !== originalLength) {
                     modified = true;
                 }
             }
@@ -441,6 +502,7 @@ export const useDataStore = defineStore('data', () => {
         removeProfile,
         removeManualNodeFromProfiles,
         removeSubscriptionFromProfiles,
+        removeChainProxyFromProfiles,
         markDirty,
         clearDirty
     };

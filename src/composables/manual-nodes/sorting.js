@@ -1,5 +1,7 @@
+import { splitSubscriptionItems, mergeSubscriptionItems } from '../subscriptionKinds.js';
+
 export function buildAutoSortedSubscriptions(allSubscriptions, manualNodes) {
-  const subs = allSubscriptions.filter(s => s.url && /^https?:\/\//.test(s.url));
+  const { chainProxies, remoteSubscriptions, others } = splitSubscriptionItems(allSubscriptions || []);
   const nodes = [...manualNodes];
 
   const regionKeywords = { HK: [/香港/, /HK/, /Hong Kong/i], TW: [/台湾/, /TW/, /Taiwan/i], SG: [/新加坡/, /SG/, /狮城/, /Singapore/i], JP: [/日本/, /JP/, /Japan/i], US: [/美国/, /US/, /United States/i], KR: [/韩国/, /KR/, /Korea/i], GB: [/英国/, /GB/, /UK/, /United Kingdom/i], DE: [/德国/, /DE/, /Germany/i], FR: [/法国/, /FR/, /France/i], CA: [/加拿大/, /CA/, /Canada/i], AU: [/澳大利亚/, /AU/, /Australia/i], };
@@ -27,5 +29,10 @@ export function buildAutoSortedSubscriptions(allSubscriptions, manualNodes) {
     return a.name.localeCompare(b.name, 'zh-CN');
   });
 
-  return [...nodes, ...subs];
+  return mergeSubscriptionItems({
+    manualNodes: nodes,
+    chainProxies,
+    remoteSubscriptions,
+    others
+  });
 }
