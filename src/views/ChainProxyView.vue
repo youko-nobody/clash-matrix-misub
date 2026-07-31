@@ -22,6 +22,7 @@ const selectedProfileId = ref(CANDIDATE_SOURCE_ALL);
 const loadingNodes = ref(false);
 const nodeLoadError = ref('');
 const nodeLoadWarning = ref('');
+const nodeLoadRequestId = ref(0);
 const profileNodes = ref([]);
 const selectedFrontNames = ref([]);
 const selectedBackNames = ref([]);
@@ -350,8 +351,14 @@ const clearFrontSelection = () => clearSelection(selectedFrontNames);
 const clearBackSelection = () => clearSelection(selectedBackNames);
 
 const loadProfileNodes = async () => {
+  const requestId = nodeLoadRequestId.value + 1;
+  nodeLoadRequestId.value = requestId;
+
   if (!isAllCandidateSource.value && !selectedProfile.value) {
     profileNodes.value = [];
+    loadingNodes.value = false;
+    nodeLoadError.value = '';
+    nodeLoadWarning.value = '';
     return;
   }
 
@@ -365,7 +372,8 @@ const loadProfileNodes = async () => {
         return;
       }
 
-      const results = await Promise.allSettled(enabledSubscriptions.value.map(async subscription => {
+      const subscriptionsToLoad = [...enabledSubscriptions.value];
+      const results = await Promise.allSettled(subscriptionsToLoad.map(async subscription => {
         const data = await api.post('/api/subscription_nodes', {
           subscriptionId: subscription.id,
           userAgent: PREVIEW_USER_AGENT
@@ -384,7 +392,7 @@ const loadProfileNodes = async () => {
       const loadedNodes = [];
       const failedSources = [];
       results.forEach((result, index) => {
-        const subscriptionName = enabledSubscriptions.value[index]?.name || '未命名机场订阅';
+        const subscriptionName = subscriptionsToLoad[index]?.name || '未命名机场订阅';
         if (result.status === 'fulfilled') {
           loadedNodes.push(...result.value.nodes);
         } else {
@@ -392,6 +400,7 @@ const loadProfileNodes = async () => {
         }
       });
 
+      if (requestId !== nodeLoadRequestId.value) return;
       profileNodes.value = loadedNodes;
 
       if (failedSources.length) {
@@ -414,12 +423,16 @@ const loadProfileNodes = async () => {
     if (!data.success) {
       throw new Error(data.error || '节点预览失败');
     }
+    if (requestId !== nodeLoadRequestId.value) return;
     profileNodes.value = Array.isArray(data.nodes) ? data.nodes : [];
   } catch (error) {
+    if (requestId !== nodeLoadRequestId.value) return;
     profileNodes.value = [];
     nodeLoadError.value = error.message || '节点加载失败';
   } finally {
-    loadingNodes.value = false;
+    if (requestId === nodeLoadRequestId.value) {
+      loadingNodes.value = false;
+    }
   }
 };
 
