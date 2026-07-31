@@ -180,4 +180,27 @@ describe('Clash 内置生成器', () => {
             'dialer-proxy': 'ManualFront'
         });
     });
+
+    it('keeps chain dependency proxies out of policy groups when they were only auto-included', () => {
+        const nodes = [
+            'ss://YWVzLTEyOC1nY206ZnJvbnQtcGFzcw==@front.example.com:8388#FrontNode',
+            'ss://YWVzLTEyOC1nY206aG9tZS1wYXNz@home.example.com:8388#US家宽'
+        ].join('\n');
+
+        const parsed = yaml.load(generateBuiltinClashConfig(nodes, {
+            ruleLevel: 'matrix',
+            isMeta: true,
+            chainInsertAfter: 1,
+            chainNodes: [{ enabled: true, name: 'FrontNode -> US家宽', frontName: 'FrontNode', backName: 'US家宽' }],
+            hiddenPolicyProxyNames: ['US家宽']
+        }));
+        const proxyGroup = parsed['proxy-groups'].find(group => group.name === 'PROXY');
+        const autoGroup = parsed['proxy-groups'].find(group => group.name === '♻️ 自动测速');
+
+        expect(parsed.proxies.map(proxy => proxy.name)).toEqual(['FrontNode', 'FrontNode -> US家宽', 'US家宽']);
+        expect(proxyGroup.proxies).toContain('FrontNode -> US家宽');
+        expect(proxyGroup.proxies).not.toContain('US家宽');
+        expect(autoGroup.proxies).toContain('FrontNode -> US家宽');
+        expect(autoGroup.proxies).not.toContain('US家宽');
+    });
 });

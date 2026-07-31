@@ -80,6 +80,21 @@ function stripInternalProxyFields(proxies) {
     });
 }
 
+function getPolicyVisibleProxies(proxies, hiddenNames = []) {
+    const hiddenNameSet = new Set((Array.isArray(hiddenNames) ? hiddenNames : [])
+        .map(name => String(name || '').trim())
+        .filter(Boolean));
+
+    if (hiddenNameSet.size === 0) return proxies;
+
+    return proxies.filter(proxy => {
+        const name = String(proxy?.name || proxy?.tag || '').trim();
+        if (!name) return false;
+        if (proxy?.metadata?.isChainNode) return true;
+        return !hiddenNameSet.has(name);
+    });
+}
+
 /**
  * Clash/Mihomo policy groups expect url-test/fallback options at the group
  * top level, while the shared policy model keeps them under group.options for
@@ -268,7 +283,8 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
 
         // 生成策略组并执行引用修剪
         const policyGroupsFactory = POLICY_GROUPS[levelKey] || POLICY_GROUPS.STD;
-        let proxyGroups = policyGroupsFactory(proxies, options);
+        const policyProxies = getPolicyVisibleProxies(proxies, options.hiddenPolicyProxyNames);
+        let proxyGroups = policyGroupsFactory(policyProxies, options);
         proxyGroups = pruneProxyGroups(proxyGroups, proxies);
         proxyGroups = normalizeClashProxyGroups(proxyGroups);
         

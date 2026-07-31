@@ -238,7 +238,7 @@ function getChainEndpointNames(chainNodes = []) {
     return names;
 }
 
-function appendChainDependencyManualNodes(targetMisubs, allMisubs, chainNodes) {
+function appendChainDependencyManualNodes(targetMisubs, allMisubs, chainNodes, hiddenPolicyProxyNames = new Set()) {
     const dependencyNames = getChainEndpointNames(chainNodes);
     if (dependencyNames.size === 0) return targetMisubs;
 
@@ -258,6 +258,11 @@ function appendChainDependencyManualNodes(targetMisubs, allMisubs, chainNodes) {
         });
 
     if (dependencyManualNodes.length === 0) return targetMisubs;
+
+    dependencyManualNodes.forEach(item => {
+        const name = String(item?.name || '').trim();
+        if (name) hiddenPolicyProxyNames.add(name);
+    });
 
     const manualNodes = (targetMisubs || []).filter(isManualNodeEntry);
     const otherMisubs = (targetMisubs || []).filter(item => !isManualNodeEntry(item));
@@ -548,6 +553,7 @@ export async function handleMisubRequest(context) {
     let subName = config.FileName;
     let isProfileExpired = false; // Moved declaration here
     let selectedChainProxies = [];
+    const hiddenPolicyProxyNames = new Set();
 
     const DEFAULT_EXPIRED_NODE = `trojan://00000000-0000-0000-0000-000000000000@127.0.0.1:443#${encodeURIComponent('您的订阅已失效')}`;
 
@@ -615,7 +621,7 @@ export async function handleMisubRequest(context) {
                 }
                 targetMisubs = buildProfileTargetMisubs(profile, misubMap);
                 selectedChainProxies = resolveSelectedChainProxies(profile, relatedSubs);
-                targetMisubs = appendChainDependencyManualNodes(targetMisubs, allMisubs, selectedChainProxies);
+                targetMisubs = appendChainDependencyManualNodes(targetMisubs, allMisubs, selectedChainProxies, hiddenPolicyProxyNames);
             }
             // [新增] 增加订阅组下载计数
             // 仅在非回调请求时及非内部请求时增加计数(避免重复计数)
@@ -903,6 +909,7 @@ export async function handleMisubRequest(context) {
                     customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
                     chainNodes: !isProfileExpired ? selectedChainProxies : [],
                     chainInsertAfter: selectedManualNodeCount,
+                    hiddenPolicyProxyNames: Array.from(hiddenPolicyProxyNames),
                     isMeta: isMetaCore(userAgentHeader, url.searchParams)
                 };
                 const rendered = await ProcessorService.renderOutput({
@@ -1073,6 +1080,7 @@ export async function handleMisubRequest(context) {
         customMatrixRules: Array.isArray(config.customMatrixRules) ? config.customMatrixRules : [],
         chainNodes: !isProfileExpired ? selectedChainProxies : [],
         chainInsertAfter: selectedManualNodeCount,
+        hiddenPolicyProxyNames: Array.from(hiddenPolicyProxyNames),
         isMeta: isMetaCore(userAgentHeader, url.searchParams)
     };
 

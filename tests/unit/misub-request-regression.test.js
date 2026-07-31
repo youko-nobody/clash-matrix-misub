@@ -412,6 +412,7 @@ describe('handleMisubRequest regression coverage', () => {
             const parsed = yaml.load(await response.text());
             const proxyNames = parsed.proxies.map(proxy => proxy.name);
             const chainProxy = parsed.proxies.find(proxy => proxy.name === 'Chain ManualFront -> AirportBack');
+            const proxyGroup = parsed['proxy-groups'].find(group => group.name === 'PROXY');
 
             expect(response.status).toBe(200);
             expect(proxyNames).toEqual(['ManualFront', 'Chain ManualFront -> AirportBack', 'Airport A - AirportBack']);
@@ -419,6 +420,8 @@ describe('handleMisubRequest regression coverage', () => {
                 server: 'back.example.com',
                 'dialer-proxy': 'ManualFront'
             });
+            expect(proxyGroup.proxies).toContain('Chain ManualFront -> AirportBack');
+            expect(proxyGroup.proxies).not.toContain('ManualFront');
         } finally {
             logSpy.mockRestore();
         }
